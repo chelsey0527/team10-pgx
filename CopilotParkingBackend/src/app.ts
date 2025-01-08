@@ -1,0 +1,3 @@
+import aiRoutes from './routes/aiRoutes';
+// ...
+app.use('/api/ai', aiRoutes);
