@@ -22,20 +22,18 @@ const Home = () => {
       {/* Content */}
       <ScrollView contentContainerStyle={styles.scrollViewContent}>
         {/* Card 1 */}
-        <View style={styles.card}>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('ParkingAssistant')}
+          style={styles.card}
+        >
           <Image
             source={require('../assets/parking.jpg')}
             style={styles.cardImage}
           />
           <View style={styles.cardTextContinaer}>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('ParkingAssistant')}
-            style={styles.card}
-          >
             <Text style={styles.cardText}>Help me with the parking at Microsoft Redmond</Text>
-          </TouchableOpacity>
           </View>
-        </View>
+        </TouchableOpacity>
 
         {/* Card 2 */}
         <View style={styles.card}>
