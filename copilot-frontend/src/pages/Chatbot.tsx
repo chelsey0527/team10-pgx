@@ -4,7 +4,9 @@ import { AppDispatch } from '../store/store';
 import { RootState } from '../store/store';
 import { setUser, setLoading as setUserLoading, setError as setUserError } from '../store/userSlice';
 import { setEvent } from '../store/activationSlice';
-import { getUserByActivationCode, createConversation, getConversationHistory, getBotResponse } from '../services/api';
+import { getUserByActivationCode, createConversation, getConversationHistory, getSmartBotResponse } from '../services/api';
+import { initializeChatSession, processUserMessage } from '../services/chatService';
+import { messageTemplates } from '../utils/messageTemplates';
 
 const Chatbot = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -30,29 +32,9 @@ const Chatbot = () => {
         dispatch(setEvent(eventData));
         dispatch({ type: 'activation/setEventUser', payload: eventUserData });
         
-        console.log('user', userData, ' & event user data', eventUserData);
-        // Set initial message
-        if (userData && eventUserData) {
-          const initialMessage = [
-            `Hi, nice to see you, ${userData.firstName}! Based on the one-time code you provided. I have found your scheduled meeting. Is this the correct meeting information you'd like to use to pre-register parking?`,
-            `**${eventData.name}**`,
-            `**${new Date(eventData.startTime).toLocaleString()} (PST)**`,
-            `**Building: ${eventData.building}**`,
-            `Just Type "Yes" or "No" to answer 😊`
-          ].join('\n');
-
-          // Save bot message to database
-          if (eventUserData.id) {
-            await createConversation(eventUserData.id, 'bot', initialMessage);
-          }
-
-          setMessages([
-            {
-              text: initialMessage,
-              sender: 'bot',
-              timestamp: new Date(),
-            },
-          ]);
+        if (userData && eventUserData?.id) {
+          const initialMessage = await initializeChatSession(userData, eventData, eventUserData.id);
+          setMessages([initialMessage]);
         }
       } catch (error) {
         dispatch(setUserError(error instanceof Error ? error.message : 'An error occurred'));
@@ -62,17 +44,16 @@ const Chatbot = () => {
     };
 
     initializeChat();
-  }, [activationCode, dispatch, eventUser?.id]);
+  }, [activationCode, dispatch]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputMessage.trim() || !eventUser?.id) return;
 
     const userMessage = inputMessage;
-    setInputMessage(''); // Clear input early for better UX
+    setInputMessage('');
 
     try {
-      // Add user message to UI
       const newUserMessage = {
         text: userMessage,
         sender: 'user' as const,
@@ -80,30 +61,15 @@ const Chatbot = () => {
       };
       setMessages(prev => [...prev, newUserMessage]);
 
-      // Save user message to database
-      await createConversation(eventUser.id, 'user', userMessage);
-      
-      // Get bot response
-      const botResponse = await getBotResponse(eventUser.id, userMessage);
-      
-      // Save bot response to database and update UI
-      await createConversation(eventUser.id, 'bot', botResponse.message);
-      
-      const newBotMessage = {
-        text: botResponse.message,
-        sender: 'bot' as const,
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, newBotMessage]);
+      const botMessage = await processUserMessage(eventUser.id, userMessage);
+      setMessages(prev => [...prev, botMessage]);
     } catch (error) {
       console.error('Failed to process message:', error);
-      // Optionally show error to user
-      const errorMessage = {
-        text: "Sorry, I'm having trouble responding right now. Please try again.",
+      setMessages(prev => [...prev, {
+        text: messageTemplates.errorMessage(),
         sender: 'bot' as const,
         timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, errorMessage]);
+      }]);
     }
   };
 

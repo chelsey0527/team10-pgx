@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3001';
+const GROQ_API_KEY = process.env.REACT_APP_API_KEY;
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -40,4 +41,21 @@ export const getBotResponse = async (eventUserId: string, userMessage: string) =
     message: userMessage,
   });
   return response.data;
+};
+
+export const getSmartBotResponse = async (eventUserId: string, message: string) => {
+  try {
+    const response = await api.post('/api/conversations/smart-response', {
+      eventUserId,
+      message,
+    }, {
+      headers: {
+        'Authorization': `Bearer ${GROQ_API_KEY}`,
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('API Key:', GROQ_API_KEY);
+    throw error;
+  }
 }; 

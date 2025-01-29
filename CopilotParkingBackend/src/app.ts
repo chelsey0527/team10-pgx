@@ -3,6 +3,7 @@ import cors from 'cors';
 import eventUserRoutes from './routes/eventUserRoutes';
 import activationRoutes from './routes/activationRoutes';
 import conversationRoutes from './routes/conversationRoutes';
+import dotenv from 'dotenv';
 
 const app = express();
 
@@ -15,15 +16,53 @@ app.use(cors({
 // Enable JSON body parsing
 app.use(express.json());
 
-// Add this before routes
+// Add this before any routes
 app.use((req, res, next) => {
-  console.log('Incoming request:', req.method, req.url);
+  console.log('Incoming request:', req.method, req.url, req.path);
+  console.log('Request body:', req.body);
   next();
 });
 
-// Use routes
+// Add environment variables for API key
+dotenv.config();
+
+// Add middleware to verify API key for smart responses
+app.use('/api/conversations/smart-response', (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  const apiKey = process.env.GROQ_API_KEY;
+  
+  console.log('Auth header:', authHeader); // Debug log
+  console.log('Expected API key:', apiKey); // Debug log
+  
+  if (!authHeader || !authHeader.startsWith('Bearer ') || authHeader.split(' ')[1] !== apiKey) {
+    return res.status(401).json({ 
+      error: 'Unauthorized',
+      authHeader: authHeader, // Debug info
+      hasApiKey: !!apiKey, // Debug info
+    });
+  }
+  
+  next();
+});
+
+// Use routes - Important: Order matters!
+app.use('/api/conversations', (req, res, next) => {
+  console.log('Hitting conversations middleware');
+  next();
+}, conversationRoutes);
+
 app.use('/api/event-users', eventUserRoutes);
-app.use('/api', activationRoutes);
-app.use('/api/conversations', conversationRoutes);
+
+// Add logging before activation routes
+app.use('/api', (req, res, next) => {
+  console.log('Hitting activation routes middleware');
+  next();
+}, activationRoutes);
+
+// Add catch-all route for debugging
+app.use('*', (req, res) => {
+  console.log('No route matched:', req.method, req.originalUrl);
+  res.status(404).json({ error: 'Route not found' });
+});
 
 export default app;
