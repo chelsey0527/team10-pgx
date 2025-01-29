@@ -1,19 +1,22 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
+interface User {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  carPlate?: string;
+  // ... other fields
+}
+
 interface UserState {
-  id: string | null;
-  firstName: string | null;
-  lastName: string | null;
-  email: string | null;
+  user: User | null;
   loading: boolean;
   error: string | null;
 }
 
 const initialState: UserState = {
-  id: null,
-  firstName: null,
-  lastName: null,
-  email: null,
+  user: null,
   loading: false,
   error: null,
 };
@@ -23,10 +26,7 @@ const userSlice = createSlice({
   initialState,
   reducers: {
     setUser: (state, action: PayloadAction<Omit<UserState, 'loading' | 'error'>>) => {
-      state.id = action.payload.id;
-      state.firstName = action.payload.firstName;
-      state.lastName = action.payload.lastName;
-      state.email = action.payload.email;
+      state.user = action.payload.user;
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload;

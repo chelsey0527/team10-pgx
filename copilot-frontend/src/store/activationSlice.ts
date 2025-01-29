@@ -10,10 +10,16 @@ interface Event {
   organizer: string;
 }
 
+interface EventUser {
+  id: string;
+  carPlate?: string;
+  // ... other fields
+}
+
 interface ActivationState {
   activationCode: string | null;
   event: Event | null;
-  eventUser: any | null;
+  eventUser: EventUser | null;
   loading: boolean;
   error: string | null;
 }
@@ -35,7 +41,7 @@ export const activationSlice = createSlice({
     setEvent(state, action: PayloadAction<Event>) {
       state.event = action.payload;
     },
-    setEventUser(state, action: PayloadAction<any>) {
+    setEventUser(state, action: PayloadAction<EventUser>) {
       state.eventUser = action.payload;
     },
     setActivationCode(state, action: PayloadAction<string>) {

@@ -19,6 +19,8 @@ model User {
   email           String      @unique
   firstName       String
   lastName        String
+  userType        String      @default("default")
+  carPlate        String?     // Add car plate to User model
   organizedEvents Event[]     // Relation to events organized by this user
   participatingIn Event[]     @relation("EventParticipants")
   eventUsers      EventUser[]

@@ -59,4 +59,12 @@ export const getSmartBotResponse = async (eventUserId: string, message: string) 
     console.error('API Key:', GROQ_API_KEY);
     throw error;
   }
+};
+
+export const registerCarPlate = async (eventUserId: string, carPlate: string) => {
+  const response = await api.post('/api/conversations/register-plate', {
+    eventUserId,
+    carPlate,
+  });
+  return response.data;
 }; 

@@ -4,11 +4,11 @@ import { AppDispatch } from '../store/store';
 import { RootState } from '../store/store';
 import { setUser, setLoading as setUserLoading, setError as setUserError } from '../store/userSlice';
 import { setEvent, setActivationCode } from '../store/activationSlice';
-import { getUserByActivationCode, createConversation, getConversationHistory, getSmartBotResponse } from '../services/api';
-import { initializeChatSession, processUserMessage } from '../services/chatService';
+import { getUserByActivationCode, createConversation, getConversationHistory, getSmartBotResponse, registerCarPlate } from '../services/api';
 import { messageTemplates } from '../utils/messageTemplates';
 import { setShowMapNotification } from '../store/navigationSlice';
 import { Message } from '../types/message';
+import { parseMessage } from '../utils/messageParser';
 
 const formatMessage = (msg: any): Message => ({
   text: msg.message,
@@ -18,13 +18,15 @@ const formatMessage = (msg: any): Message => ({
 
 const Chatbot = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { firstName } = useSelector((state: RootState) => state.user);
+  const { user } = useSelector((state: RootState) => state.user);
   const { event, activationCode, eventUser } = useSelector((state: RootState) => state.activation);
   
   const [messages, setMessages] = useState<Array<Message>>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [isReload, setIsReload] = useState(false);
+  
+  // Add ref to track initialization
+  const hasInitialized = React.useRef(false);
 
   // Add ref for the messages container
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
@@ -39,37 +41,41 @@ const Chatbot = () => {
     scrollToBottom();
   }, [messages]);
 
-  // Add this near the top of the component, with other state declarations
+  // Modified initialization effect
   useEffect(() => {
-    // Check if this is a reload by looking at performance navigation type
-    const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
-    if (navigation.type === 'reload') {
-      console.log('Page was reloaded');
-      setIsReload(true);
-    }
-  }, []);
-
-  // Initialize chat and handle activation code
-  useEffect(() => {
-    console.log('Effect triggered - checking initialization needs');
-    console.log('Current activation code in Redux:', activationCode);
-    console.log('Current document.cookie:', document.cookie);
-    
     const initializeChat = async (code: string) => {
+      if (hasInitialized.current) return; // Skip if already initialized
+      hasInitialized.current = true;
+
       try {
         setIsLoading(true);
-        console.log('Starting to fetch user data with code:', code);
         
         const { user: userData, event: eventData, eventUser: eventUserData } = await getUserByActivationCode(code);
-        console.log('Received user data:', { userData, eventData, eventUserData });
         
         dispatch(setUser(userData));
         dispatch(setEvent(eventData));
         dispatch({ type: 'activation/setEventUser', payload: eventUserData });
 
-        // Load conversation history
-        const history = await getConversationHistory(eventUserData.id);
-        setMessages(history.map(formatMessage));
+        try {
+          // Try to load conversation history
+          const history = await getConversationHistory(eventUserData.id);
+          
+          if (history && history.length > 0) {
+            // If history exists, load it
+            setMessages(history.map(formatMessage));
+          } else {
+            // If no history, start a new conversation
+            const initialMessage = {
+              text: messageTemplates.initialGreeting(userData, eventData),
+              sender: 'bot' as const,
+              timestamp: new Date()
+            };
+            setMessages([initialMessage]);
+            await createConversation(eventUserData.id, 'bot', initialMessage.text);
+          }
+        } catch (error) {
+          console.warn('Failed to load history, starting new conversation:', error);
+        }
       } catch (error) {
         console.error('Failed to initialize chat:', error);
         dispatch(setUserError(error instanceof Error ? error.message : 'An error occurred'));
@@ -82,27 +88,21 @@ const Chatbot = () => {
     let code = activationCode;
     if (!code) {
       const cookies = document.cookie.split(';');
-      console.log('All cookies:', cookies);
-      
       const activationCookie = cookies.find(cookie => cookie.trim().startsWith('activationCode='));
-      console.log('Found activation cookie:', activationCookie);
       
       if (activationCookie) {
         code = activationCookie.split('=')[1];
-        console.log('Extracted code from cookie:', code);
         dispatch(setActivationCode(code));
       }
     }
 
     if (code) {
-      console.log('Initializing chat with code:', code);
       initializeChat(code);
     } else {
-      console.log('No activation code available');
       setIsLoading(false);
     }
 
-  }, [isReload]); // This will run on initial load and when page is reloaded
+  }, [activationCode, dispatch]); // Removed messages.length from dependencies
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,6 +119,13 @@ const Chatbot = () => {
       };
       setMessages(prev => [...prev, newUserMessage]);
 
+      // Check if this message might be a car plate (after the registration prompt)
+      const lastBotMessage = messages[messages.length - 1];
+      if (lastBotMessage?.text.includes('provide your license plate number')) {
+        // This is likely a car plate response
+        await registerCarPlate(eventUser.id, userMessage);
+      }
+
       await createConversation(eventUser.id, 'user', userMessage);
 
       const { message: botResponse } = await getSmartBotResponse(eventUser.id, userMessage);
@@ -127,12 +134,27 @@ const Chatbot = () => {
         dispatch(setShowMapNotification(true));
       }
 
-      const botMessage = {
-        text: botResponse,
-        sender: 'bot' as const,
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, botMessage]);
+      // Check if the response is a split message
+      if (typeof botResponse === 'object' && Array.isArray(botResponse.content)) {
+        // Send each part as a separate message with a small delay
+        for (const part of botResponse.content) {
+          const botMessage = {
+            text: part.message,
+            sender: 'bot' as const,
+            timestamp: new Date(),
+          };
+          setMessages(prev => [...prev, botMessage]);
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      } else {
+        // Handle regular single message
+        const botMessage = {
+          text: botResponse,
+          sender: 'bot' as const,
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, botMessage]);
+      }
     } catch (error) {
       console.error('Failed to process message:', error);
       setMessages(prev => [...prev, {
@@ -141,6 +163,15 @@ const Chatbot = () => {
         timestamp: new Date(),
       }]);
     }
+  };
+
+  const formatBoldText = (text: string) => {
+    return text.split(/(\*\*.*?\*\*)/).map((part, index) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={index}>{part.slice(2, -2)}</strong>;
+      }
+      return part;
+    });
   };
 
   return (
@@ -171,19 +202,21 @@ const Chatbot = () => {
               }`}
             >
               <div
-                className={`max-w-[80%] rounded-lg p-3 whitespace-pre-line ${
+                className={`max-w-[80%] rounded-lg p-3 ${
                   message.sender === 'user'
                     ? 'bg-blue-500 text-white'
                     : 'bg-white text-black'
                 }`}
               >
-                {message.text.split('\n').map((line, i) => (
-                  <div key={i}>
-                    {line.startsWith('**') && line.endsWith('**') 
-                      ? <strong>{line.slice(2, -2)}</strong> 
-                      : line}
+                {message.sender === 'bot' ? (
+                  <div className="space-y-1">
+                    {parseMessage(message.text)}
                   </div>
-                ))}
+                ) : (
+                  <span className="whitespace-pre-line">
+                    {formatBoldText(message.text)}
+                  </span>
+                )}
               </div>
             </div>
           ))
