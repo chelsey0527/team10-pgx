@@ -1,32 +1,48 @@
 import React, { useState, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from 'axios';
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from '../store/store';
+import { verifyActivationCode } from '../services/api';
+
+// Create an async action creator
+const verifyAndStoreData = (code: string) => async (dispatch: AppDispatch) => {
+  try {
+    const { user, event, eventUser } = await verifyActivationCode(code);
+    
+    // Only dispatch after the async call is complete
+    dispatch({ type: 'user/setUser', payload: user });
+    dispatch({ type: 'activation/setActivationCode', payload: code });
+    dispatch({ type: 'activation/setEvent', payload: event });
+    dispatch({ type: 'activation/setEventUser', payload: eventUser });
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Verification failed:', error);
+    return { success: false, error };
+  }
+};
 
 const Registration = () => {
   const [activationCode, setActivationCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
-    try {
-      const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/event-users/verify-registration`, {
-      	activationCode
-      });
-
-      if (response.data.success) {
-        console.log('Registration verified:', response.data);
-        navigate('/chatbot');
-      }
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to verify registration');
-    } finally {
-      setLoading(false);
+    const result = await dispatch(verifyAndStoreData(activationCode));
+    
+    if (result?.success) {
+      navigate('/chatbot');
+    } else {
+      setError('Invalid activation code. Please try again.');
     }
+    
+    setLoading(false);
   };
 
   return (

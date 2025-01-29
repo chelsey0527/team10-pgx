@@ -30,7 +30,8 @@ model User {
 model Event {
   id              String      @id @default(uuid())
   meetingName     String
-  meetingTime     DateTime
+  startTime       DateTime    // Renamed from meetingTime
+  endTime         DateTime?   // New field added
   meetingBuilding String
   organizer       User        @relation(fields: [organizerId], references: [id])
   organizerId     String
