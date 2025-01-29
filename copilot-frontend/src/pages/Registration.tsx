@@ -15,7 +15,7 @@ const Registration = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen min-w-[375px] bg-gradient-to-br from-[#e9e9e9] to-[#ffffff] p-4">
+    <div className="flex flex-col min-h-screen min-w-[375px] bg-gradient-to-br from-[#e9e9e9] to-[#ffffff] p-10">
       <div className="flex flex-col justify-center flex-grow md:items-center">
         <div className="md:w-[600px] w-full">
           {/* Logo */}
