@@ -1,16 +1,31 @@
 import React, { useState, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from 'axios';
 
 const Registration = () => {
-  const [code, setCode] = useState("");
+  const [activationCode, setActivationCode] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (code.length === 6) {
-      navigate("/chatbot");
-    } else {
-      alert("Please enter a valid 6-digit code.");
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/event-users/verify-registration`, {
+      	activationCode
+      });
+
+      if (response.data.success) {
+        console.log('Registration verified:', response.data);
+        navigate('/chatbot');
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to verify registration');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -42,12 +57,13 @@ const Registration = () => {
                     type="text"
                     maxLength={1}
                     className="w-10 h-12 text-center text-2xl font-medium border rounded-lg bg-[#D9D9D9]"
-                    value={code[index] || ''}
+                    value={activationCode[index] || ''}
                     onChange={(e) => {
-                      const newCode = code.split('');
-                      newCode[index] = e.target.value;
-                      setCode(newCode.join(''));
+                      const newCode = activationCode.split('');
+                      newCode[index] = e.target.value.toUpperCase();
+                      setActivationCode(newCode.join(''));
                     }}
+                    disabled={loading}
                   />
                 ))}
               </div>
@@ -55,10 +71,12 @@ const Registration = () => {
               <button
                 type="submit"
                 className="w-full max-w-xs py-3 rounded-full bg-[#D9D9D9] text-black mt-20"
+                disabled={loading}
               >
-                Enter
+                {loading ? 'Verifying...' : 'Verify'}
               </button>
             </form>
+            {error && <div className="error text-center">{error}</div>}
           </div>
         </div>
       </div>
