@@ -23,17 +23,24 @@ model User {
   participatingIn Event[]     @relation("EventParticipants")
   eventUsers      EventUser[]
   createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt    // Add this field to track updates
+  isActive        Boolean     @default(true) // Add this for user account status
 }
 
 model Event {
   id              String      @id @default(uuid())
-  meetingTime     DateTime
+  meetingName     String
+  startTime       DateTime    // Renamed from meetingTime
+  endTime         DateTime?   // New field added
   meetingBuilding String
   organizer       User        @relation(fields: [organizerId], references: [id])
   organizerId     String
   participants    User[]      @relation("EventParticipants")
   eventUsers      EventUser[]
   createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt    // Add this field
+  status          String      @default("active") // Add status field for event lifecycle
+  description     String?    // Optional event description
 }
 
 model Conversation {
@@ -46,6 +53,8 @@ model Conversation {
   mediaUrl        String?
   specialNotes    String?
   createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt    // Add this field
+  isRead          Boolean   @default(false) // Add read status
 }
 
 model EventUser {
@@ -57,18 +66,27 @@ model EventUser {
   activationCode String         @unique
   parkingSpot    String?        @unique
   conversations  Conversation[]
+  createdAt      DateTime       @default(now())     // Add this field
+  updatedAt      DateTime       @updatedAt          // Add this field
+  status         String         @default("pending") // Add status field
+  checkInTime    DateTime?      // Add check-in timestamp
+  checkOutTime   DateTime?      // Add check-out timestamp
 
   @@unique([eventId, userId])
 }
 
 model Map {
-  id               String  @id @default(uuid())
-  mapNickname      String  @unique
-  mediaUrl         String  // URL for map image
+  id               String    @id @default(uuid())
+  mapNickname      String    @unique
+  mediaUrl         String    // URL for map image
   floorNumber      Int
-  areaType         String  // e.g., 'visitor', 'accessibility', 'ev' etc.
-  assignedEntrance String  // entrance point reference
-  targetBuilding   String  // destination building reference
+  areaType         String    // e.g., 'visitor', 'accessibility', 'ev' etc.
+  assignedEntrance String    // entrance point reference
+  targetBuilding   String    // destination building reference
+  isActive         Boolean   @default(true) // Add this for map availability
+  createdAt        DateTime  @default(now())     // Add this field
+  updatedAt        DateTime  @updatedAt          // Add this field
+  capacity         Int?      // Optional capacity for the parking area
   
   @@index([targetBuilding, assignedEntrance]) // Index for quick lookups in recommendation system
 }
