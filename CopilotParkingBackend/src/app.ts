@@ -7,6 +7,9 @@ import dotenv from 'dotenv';
 
 const app = express();
 
+// Move dotenv config to the top, before any other code
+dotenv.config();
+
 // Add CORS middleware before other routes
 app.use(cors({
   origin: 'http://localhost:3000',
@@ -23,22 +26,23 @@ app.use((req, res, next) => {
   next();
 });
 
-// Add environment variables for API key
-dotenv.config();
+// Add debug log
+console.log('Backend API Key:', process.env.GROQ_API_KEY);
 
 // Add middleware to verify API key for smart responses
 app.use('/api/conversations/smart-response', (req, res, next) => {
   const authHeader = req.headers.authorization;
   const apiKey = process.env.GROQ_API_KEY;
   
-  console.log('Auth header:', authHeader); // Debug log
-  console.log('Expected API key:', apiKey); // Debug log
+  console.log('Comparing:');
+  console.log('Received:', authHeader?.split(' ')[1]);
+  console.log('Expected:', apiKey);
   
   if (!authHeader || !authHeader.startsWith('Bearer ') || authHeader.split(' ')[1] !== apiKey) {
     return res.status(401).json({ 
       error: 'Unauthorized',
-      authHeader: authHeader, // Debug info
-      hasApiKey: !!apiKey, // Debug info
+      received: authHeader?.split(' ')[1],
+      expected: apiKey,
     });
   }
   
