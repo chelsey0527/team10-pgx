@@ -11,10 +11,7 @@ const app = express();
 dotenv.config();
 
 // Add CORS middleware before other routes
-app.use(cors({
-  origin: 'http://localhost:3000',
-  credentials: true
-}));
+app.use(cors());
 
 // Enable JSON body parsing
 app.use(express.json());

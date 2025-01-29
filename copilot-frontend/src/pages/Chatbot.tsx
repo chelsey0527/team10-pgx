@@ -21,6 +21,19 @@ const Chatbot = () => {
   }>>([]);
   const [inputMessage, setInputMessage] = useState('');
 
+  // Add ref for the messages container
+  const messagesEndRef = React.useRef<HTMLDivElement>(null);
+
+  // Scroll to bottom function
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
   useEffect(() => {
     const initializeChat = async () => {
       if (!activationCode) return;
@@ -66,7 +79,7 @@ const Chatbot = () => {
 
       const { message: botResponse } = await getSmartBotResponse(eventUser.id, userMessage);
       
-      if (botResponse.includes('voice assistant')) {
+      if (botResponse.includes('view interactive map')) {
         dispatch(setShowMapNotification(true));
       }
 
@@ -108,9 +121,9 @@ const Chatbot = () => {
   }, [eventUser?.id]);
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-b from-[#FCF9F6] to-[#FBF5EF]">
+    <div className="flex flex-col h-[calc(100vh-5rem)] bg-gradient-to-b from-[#FCF9F6] to-[#f3e6d8]">
       {/* Header */}
-      <div className="flex items-center p-4 ">
+      <div className="flex items-center p-4">
         <div className="flex-1">
           <div className="flex items-center">
             <div className="w-2 h-2 bg-black rounded-full mr-2" />
@@ -145,6 +158,8 @@ const Chatbot = () => {
             </div>
           </div>
         ))}
+        {/* Add div ref for scrolling */}
+        <div ref={messagesEndRef} />
       </div>
 
       {/* Message input */}
@@ -161,8 +176,8 @@ const Chatbot = () => {
           type="text"
           value={inputMessage}
           onChange={(e) => setInputMessage(e.target.value)}
-          placeholder="Message Copilot..."
-          className="flex-1 p-2 rounded-[18px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="Message Copilot"
+          className="flex-1 p-2 px-4 rounded-[18px] focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <button
           type="submit"

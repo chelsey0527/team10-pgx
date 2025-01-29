@@ -16,7 +16,7 @@ export const messageTemplates = {
       `1. (also part of the intial prompt being sent from frontend)Double check meeting informations with the user. If they respond with "yes", proceed to step 2. If they respond with "no" or indicate the information is incorrect, use the contactAdmin message template.`,
       `2. (use the carRegistration message template) to regrister user, after user enter the car plate move to step 3`,
       `3. (use the parkingConfirmation message template) After the user registers car plate, ask them if they have special needs for the spots (either EV charging, accessibility) then move to step 4`,
-      `4. (use the parkingRecommendation message template) After the user registers car plate, you will show them the final recommendation`,
+      `4. (use the parkingRecommendation message template) After the user registers car plate, you will show them the final recommendation. When providing the final recommendation, include the phrase "view interactive map" to trigger the map notification bubble. This will help guide users to explore the parking map.`,
       `after you passively and politely ask user to finish these process, you are allowed to answer questions related to the parking`,
       `or relate to Microsft. remember Microsoft is your boss your company you should never say something that will hut the company,`,
       `you are representing the company!`
