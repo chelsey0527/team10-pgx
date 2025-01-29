@@ -7,6 +7,7 @@ import { setEvent } from '../store/activationSlice';
 import { getUserByActivationCode, createConversation, getConversationHistory, getSmartBotResponse } from '../services/api';
 import { initializeChatSession, processUserMessage } from '../services/chatService';
 import { messageTemplates } from '../utils/messageTemplates';
+import { setShowMapNotification } from '../store/navigationSlice';
 
 const Chatbot = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -33,8 +34,8 @@ const Chatbot = () => {
         dispatch({ type: 'activation/setEventUser', payload: eventUserData });
         
         if (userData && eventUserData?.id) {
-          const initialMessage = await initializeChatSession(userData, eventData, eventUserData.id);
-          setMessages([initialMessage]);
+          const initialMessages = await initializeChatSession(userData, eventData, eventUserData.id);
+          setMessages(initialMessages);
         }
       } catch (error) {
         dispatch(setUserError(error instanceof Error ? error.message : 'An error occurred'));
@@ -61,7 +62,19 @@ const Chatbot = () => {
       };
       setMessages(prev => [...prev, newUserMessage]);
 
-      const botMessage = await processUserMessage(eventUser.id, userMessage);
+      await createConversation(eventUser.id, 'user', userMessage);
+
+      const { message: botResponse } = await getSmartBotResponse(eventUser.id, userMessage);
+      
+      if (botResponse.includes('voice assistant')) {
+        dispatch(setShowMapNotification(true));
+      }
+
+      const botMessage = {
+        text: botResponse,
+        sender: 'bot' as const,
+        timestamp: new Date(),
+      };
       setMessages(prev => [...prev, botMessage]);
     } catch (error) {
       console.error('Failed to process message:', error);

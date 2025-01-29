@@ -79,8 +79,7 @@ router.post('/smart-response', async (req, res) => {
     }
 
     const { user, event } = eventUser;
-    const systemMessage = messageTemplates.initialGreeting(user, event);
-
+    
     // Get conversation history
     const conversationHistory = await prisma.conversation.findMany({
       where: { eventUserId },
@@ -94,15 +93,28 @@ router.post('/smart-response', async (req, res) => {
       content: msg.message,
     }));
 
-    const response = await axios.post(API_URL, {
-      messages: [
-        { role: 'system', content: systemMessage },
-        ...formattedHistory,
-        { role: 'user', content: message }
-      ],
+    // Create messages array with proper formatting
+    const messages = [
+      messageTemplates.initialGreeting(user, event), // Use the entire object as is
+      ...formattedHistory,
+      { role: 'user', content: message }
+    ];
+
+    // Add logging to debug the request
+    console.log('Sending request to Groq API:', JSON.stringify({
+      messages,
       model: "llama-3.3-70b-versatile",
       temperature: 0.7,
       max_tokens: 150,
+      stream: false
+    }, null, 2));
+
+    const response = await axios.post(API_URL, {
+      messages,
+      model: "llama-3.3-70b-versatile",
+      temperature: 0.7,
+      max_tokens: 150,
+      stream: false
     }, {
       headers: {
         'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
@@ -111,11 +123,24 @@ router.post('/smart-response', async (req, res) => {
     });
 
     const aiMessage = response.data.choices[0]?.message?.content || '';
+    
+    // Store the bot's response in the database
+    await prisma.conversation.create({
+      data: {
+        conversationId: eventUserId,
+        eventUserId,
+        sender: 'bot',
+        message: aiMessage,
+      },
+    });
 
     res.json({ message: aiMessage });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Smart response error:', error);
-    res.status(500).json({ error: 'Failed to get AI response' });
+    res.status(500).json({ 
+      error: 'Failed to get AI response',
+      details: error.response?.data || error.message
+    });
   }
 });
 
