@@ -3,16 +3,16 @@ import axios from 'axios';
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3001';
 const GROQ_API_KEY = process.env.REACT_APP_API_KEY;
 
-
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: 'http://localhost:3001',
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
 export const getUserByActivationCode = async (activationCode: string) => {
-  const response = await api.get(`/api/users/activation/${activationCode}`);
+  const response = await api.post('/api/activate', { activationCode });
   return response.data;
 };
 
@@ -31,8 +31,8 @@ export const createConversation = async (eventUserId: string, sender: 'user' | '
   return response.data;
 };
 
-export const getConversationHistory = async (eventUserId: string) => {
-  const response = await api.get(`/api/conversations/${eventUserId}`);
+export const getConversationHistory = async (userId: string) => {
+  const response = await api.get(`/api/conversations/${userId}`);
   return response.data;
 };
 

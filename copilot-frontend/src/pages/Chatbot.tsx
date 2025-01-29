@@ -3,23 +3,28 @@ import { useSelector, useDispatch } from 'react-redux';
 import { AppDispatch } from '../store/store';
 import { RootState } from '../store/store';
 import { setUser, setLoading as setUserLoading, setError as setUserError } from '../store/userSlice';
-import { setEvent } from '../store/activationSlice';
+import { setEvent, setActivationCode } from '../store/activationSlice';
 import { getUserByActivationCode, createConversation, getConversationHistory, getSmartBotResponse } from '../services/api';
 import { initializeChatSession, processUserMessage } from '../services/chatService';
 import { messageTemplates } from '../utils/messageTemplates';
 import { setShowMapNotification } from '../store/navigationSlice';
+import { Message } from '../types/message';
+
+const formatMessage = (msg: any): Message => ({
+  text: msg.message,
+  sender: msg.sender,
+  timestamp: new Date(msg.createdAt)
+});
 
 const Chatbot = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { firstName } = useSelector((state: RootState) => state.user);
   const { event, activationCode, eventUser } = useSelector((state: RootState) => state.activation);
   
-  const [messages, setMessages] = useState<Array<{
-    text: string;
-    sender: 'bot' | 'user';
-    timestamp: Date;
-  }>>([]);
+  const [messages, setMessages] = useState<Array<Message>>([]);
   const [inputMessage, setInputMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isReload, setIsReload] = useState(false);
 
   // Add ref for the messages container
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
@@ -34,31 +39,70 @@ const Chatbot = () => {
     scrollToBottom();
   }, [messages]);
 
+  // Add this near the top of the component, with other state declarations
   useEffect(() => {
-    const initializeChat = async () => {
-      if (!activationCode) return;
+    // Check if this is a reload by looking at performance navigation type
+    const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+    if (navigation.type === 'reload') {
+      console.log('Page was reloaded');
+      setIsReload(true);
+    }
+  }, []);
 
+  // Initialize chat and handle activation code
+  useEffect(() => {
+    console.log('Effect triggered - checking initialization needs');
+    console.log('Current activation code in Redux:', activationCode);
+    console.log('Current document.cookie:', document.cookie);
+    
+    const initializeChat = async (code: string) => {
       try {
-        dispatch(setUserLoading(true));
-        const { user: userData, event: eventData, eventUser: eventUserData } = await getUserByActivationCode(activationCode);
+        setIsLoading(true);
+        console.log('Starting to fetch user data with code:', code);
+        
+        const { user: userData, event: eventData, eventUser: eventUserData } = await getUserByActivationCode(code);
+        console.log('Received user data:', { userData, eventData, eventUserData });
         
         dispatch(setUser(userData));
         dispatch(setEvent(eventData));
         dispatch({ type: 'activation/setEventUser', payload: eventUserData });
-        
-        if (userData && eventUserData?.id) {
-          const initialMessages = await initializeChatSession(userData, eventData, eventUserData.id);
-          setMessages(initialMessages);
-        }
+
+        // Load conversation history
+        const history = await getConversationHistory(eventUserData.id);
+        setMessages(history.map(formatMessage));
       } catch (error) {
+        console.error('Failed to initialize chat:', error);
         dispatch(setUserError(error instanceof Error ? error.message : 'An error occurred'));
       } finally {
-        dispatch(setUserLoading(false));
+        setIsLoading(false);
       }
     };
 
-    initializeChat();
-  }, [activationCode, dispatch]);
+    // Try to get activation code from either Redux or cookies
+    let code = activationCode;
+    if (!code) {
+      const cookies = document.cookie.split(';');
+      console.log('All cookies:', cookies);
+      
+      const activationCookie = cookies.find(cookie => cookie.trim().startsWith('activationCode='));
+      console.log('Found activation cookie:', activationCookie);
+      
+      if (activationCookie) {
+        code = activationCookie.split('=')[1];
+        console.log('Extracted code from cookie:', code);
+        dispatch(setActivationCode(code));
+      }
+    }
+
+    if (code) {
+      console.log('Initializing chat with code:', code);
+      initializeChat(code);
+    } else {
+      console.log('No activation code available');
+      setIsLoading(false);
+    }
+
+  }, [isReload]); // This will run on initial load and when page is reloaded
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,27 +143,6 @@ const Chatbot = () => {
     }
   };
 
-  // Load conversation history
-  useEffect(() => {
-    const loadConversationHistory = async () => {
-      if (!eventUser?.id) return;
-
-      try {
-        const history = await getConversationHistory(eventUser.id);
-        const formattedMessages = history.map((msg: any) => ({
-          text: msg.message,
-          sender: msg.sender,
-          timestamp: new Date(msg.createdAt),
-        }));
-        setMessages(formattedMessages);
-      } catch (error) {
-        console.error('Failed to load conversation history:', error);
-      }
-    };
-
-    loadConversationHistory();
-  }, [eventUser?.id]);
-
   return (
     <div className="flex flex-col h-[calc(100vh-5rem)] bg-gradient-to-b from-[#FCF9F6] to-[#f3e6d8]">
       {/* Header */}
@@ -134,31 +157,37 @@ const Chatbot = () => {
 
       {/* Chat messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((message, index) => (
-          <div
-            key={index}
-            className={`flex ${
-              message.sender === 'user' ? 'justify-end' : 'justify-start'
-            }`}
-          >
+        {isLoading ? (
+          <div className="flex flex-col justify-center items-center h-full space-y-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#F5EFE9] border-t-blue-500"></div>
+            <p className="text-gray-500 animate-pulse">Loading conversation...</p>
+          </div>
+        ) : (
+          messages.map((message, index) => (
             <div
-              className={`max-w-[80%] rounded-lg p-3 whitespace-pre-line ${
-                message.sender === 'user'
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-white text-black'
+              key={index}
+              className={`flex ${
+                message.sender === 'user' ? 'justify-end' : 'justify-start'
               }`}
             >
-              {message.text.split('\n').map((line, i) => (
-                <div key={i}>
-                  {line.startsWith('**') && line.endsWith('**') 
-                    ? <strong>{line.slice(2, -2)}</strong> 
-                    : line}
-                </div>
-              ))}
+              <div
+                className={`max-w-[80%] rounded-lg p-3 whitespace-pre-line ${
+                  message.sender === 'user'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-white text-black'
+                }`}
+              >
+                {message.text.split('\n').map((line, i) => (
+                  <div key={i}>
+                    {line.startsWith('**') && line.endsWith('**') 
+                      ? <strong>{line.slice(2, -2)}</strong> 
+                      : line}
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
-        {/* Add div ref for scrolling */}
+          ))
+        )}
         <div ref={messagesEndRef} />
       </div>
 
