@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: 'ABC Ginto', sans-serif;
+  min-width: 375px;
+  overflow-x: auto;
+} 
