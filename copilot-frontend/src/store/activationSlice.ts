@@ -1,4 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createAction } from '@reduxjs/toolkit';
 
 interface Event {
   id: string;
@@ -9,10 +10,16 @@ interface Event {
   organizer: string;
 }
 
+interface EventUser {
+  id: string;
+  carPlate?: string;
+  // ... other fields
+}
+
 interface ActivationState {
   activationCode: string | null;
   event: Event | null;
-  eventUser: any | null;
+  eventUser: EventUser | null;
   loading: boolean;
   error: string | null;
 }
@@ -25,21 +32,30 @@ const initialState: ActivationState = {
   error: null,
 };
 
+export const setActivationCode = createAction<string>('activation/setActivationCode');
+
 export const activationSlice = createSlice({
   name: 'activation',
   initialState,
   reducers: {
-    setActivationCode(state, action: PayloadAction<string>) {
-      state.activationCode = action.payload;
-    },
     setEvent(state, action: PayloadAction<Event>) {
       state.event = action.payload;
     },
-    setEventUser(state, action: PayloadAction<any>) {
+    setEventUser(state, action: PayloadAction<EventUser>) {
       state.eventUser = action.payload;
     },
+    setActivationCode(state, action: PayloadAction<string>) {
+      state.activationCode = action.payload;
+    },
   },
+  extraReducers: (builder) => {
+    builder.addCase(setActivationCode, (state, action) => {
+      state.activationCode = action.payload;
+      // Persist to localStorage
+      localStorage.setItem('activationCode', action.payload);
+    });
+  }
 });
 
-export const { setActivationCode, setEvent, setEventUser } = activationSlice.actions;
+export const { setEvent, setEventUser } = activationSlice.actions;
 export default activationSlice.reducer; 

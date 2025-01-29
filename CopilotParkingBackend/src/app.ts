@@ -4,16 +4,20 @@ import eventUserRoutes from './routes/eventUserRoutes';
 import activationRoutes from './routes/activationRoutes';
 import conversationRoutes from './routes/conversationRoutes';
 import dotenv from 'dotenv';
+import cookieParser from 'cookie-parser';
 
 const app = express();
 
 // Move dotenv config to the top, before any other code
 dotenv.config();
 
-// Add CORS middleware before other routes
+// Update CORS configuration
+app.use(cookieParser());
 app.use(cors({
-  origin: 'http://localhost:3000',
-  credentials: true
+  origin: 'http://localhost:3000', // or your frontend URL
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
 // Enable JSON body parsing

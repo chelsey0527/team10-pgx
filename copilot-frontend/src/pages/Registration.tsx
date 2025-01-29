@@ -3,17 +3,24 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '../store/store';
 import { verifyActivationCode } from '../services/api';
+import { setUser } from '../store/userSlice';
+import { setEvent, setEventUser, setActivationCode } from '../store/activationSlice';
+
 
 // Create an async action creator
 const verifyAndStoreData = (code: string) => async (dispatch: AppDispatch) => {
   try {
     const { user, event, eventUser } = await verifyActivationCode(code);
     
-    // Only dispatch after the async call is complete
-    dispatch({ type: 'user/setUser', payload: user });
-    dispatch({ type: 'activation/setActivationCode', payload: code });
-    dispatch({ type: 'activation/setEvent', payload: event });
-    dispatch({ type: 'activation/setEventUser', payload: eventUser });
+    // Use action creators instead of dispatching by type
+    dispatch(setUser(user));
+    dispatch(setActivationCode(code));
+    dispatch(setEvent(event));
+    dispatch(setEventUser(eventUser));
+
+    // Store activation code in cookie
+    document.cookie = `activationCode=${code}; path=/; max-age=86400`; // 24 hours
+    console.log('Cookie set after verification:', document.cookie);
     
     return { success: true };
   } catch (error) {
@@ -27,7 +34,7 @@ const Registration = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useDispatch<any>();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

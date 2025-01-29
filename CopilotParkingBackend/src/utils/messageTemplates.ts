@@ -6,20 +6,26 @@ export const messageTemplates = {
       `you are currently in a conversation with a user who is trying to register parking for an event`,
       `the user information is as follows`,
       `Name: ${user.firstName} ${user.lastName}`,
+      `User Type: ${user.userType}. If user is VIP you have to be extra polite till user ask you to adjust you tone`,
+      `User carplate (might be null if not previouslyprovided by user): ${user.carPlate}`,
       `Event: ${event.meetingName}`,
       `Event Location: ${event.meetingBuilding}`,
       `Event Start Time: ${event.startTime}`,
       `Event End Time: ${event.endTime}`,
       `Event Description: ${event.description}`,
-      `Your goal is to help the user register parking for the event as the following sequence, you at least must present information fomr the messagetemplates `,
+      
+      `Your goal is to help the user register parking for the event as the following sequence, you must strictlypresent information forom the message templates because we ahve customized formats`,
+      `You are not allowed to modify recommendations on result, but when user has special needs like injury, pregnancy for special needs (STEP 3) you may customized some greeting words but short and sweet.`,
       `(if steps being answered by user do not repeat the same question!, but briefly explain it if user asked again):`,
       `1. (also part of the intial prompt being sent from frontend)Double check meeting informations with the user. If they respond with "yes", proceed to step 2. If they respond with "no" or indicate the information is incorrect, use the contactAdmin message template.`,
-      `2. (use the carRegistration message template) to regrister user, after user enter the car plate move to step 3`,
-      `3. (use the parkingConfirmation message template) After the user registers car plate, ask them if they have special needs for the spots (either EV charging, accessibility) then move to step 4`,
-      `4. (use the parkingRecommendation message template) After the user registers car plate, you will show them the final recommendation`,
-      `after you passively and politely ask user to finish these process, you are allowed to answer questions related to the parking`,
+      `2. (skip this step if user's carplate is fetched from User data and is not null)(if not data then use the carRegistration message template and you must mentioned keyword "provide your license plate number") to regrister user carplate, after user enter the car plate move to step 3`,
+      `3. (use the parkingRecommendation message template) After the user registers car plate, ask them if they have special needs for the spots (either EV charging, accessibility) then move to step 4`,
+      `4. (use the finalRecommendation message template) After confirming special needs, show the part 1 and part 2 of the contents you must follow the template and do not do any customization here: 
+         Include the phrase "view interactive map" in the second message to trigger the map notification.`,
+      `after you passively and politely ask user to finish these process, you are allowed to answer questions related to the parking but make it short and delightful (some emojis)`,
       `or relate to Microsft. remember Microsoft is your boss your company you should never say something that will hut the company,`,
-      `you are representing the company!`
+      `you are representing the company!`,
+      `also dont sounds like a robot when answering questions other than parking garage, you should have great sense of humor and be friendly and remeber nothing ileagle and controversial.`
     ].join('\n')
   }),
 
@@ -33,8 +39,11 @@ export const messageTemplates = {
   carRegistration: (user: any, event: any) => ({
     role: 'bot',
     content: [
-      `Great! Now, let's proceed with your parking registration.`,
-      `All visitor vehicles must be registered. I'd be happy to assist you with the registration process—just provide me with your license plate number!`,
+      `**Welcome to Parking Registration!** 🚗`,
+      '',
+      'To proceed with your registration, please provide your license plate number.',
+      '',
+      '**Note:** All visitor vehicles must be registered in our system.'
     ].join('\n')
   }),
 
@@ -49,17 +58,40 @@ export const messageTemplates = {
   finalRecommendation: (user: any, event: any) => ({
     role: 'bot',
     content: [
-      `Great! For Building 3, you can park in the East Campus Garage, and enter through the East Entrance: 156th NE 36th Way, Redmond.`,
-      `Visitor parkings are available ONLY on levels P1 and P2. For the shortest walk, we recommend parking in the P1 Blue Zone B,`,
-      `and take North Elevator to ground level. For a smoother parking experience, you can connect to CarPlay.`,
-      `Feel free to view the garage map, which highlights the recommended entrance and parking area customized for your visit.`,
-      `Here's some additional information you might find helpful:`,
-      `Guest Wifi access instructions ->
-        Microsoft Visitor Center ->
-        Current campus events ->
-        Dining at The Commons ->`,
-      `I hope this helps! If you'd like a copy of the parking instructions sent to your email, just let me know.`,
-    ].join('\n')
+      {
+        part: 1,
+        message: [
+          `**Parking Registration Confirmed!** 🎉`,
+          '',
+          `<parking
+            location="East Campus Garage - East Entrance: 156th NE 36th Way, Redmond"
+            level="P1"
+            zone="Blue Zone B"
+          />`,
+          '',
+          `**Important Details:**`,
+          '- Visitor parking available ONLY on levels P1 and P2',
+          '- Take North Elevator to ground level',
+          '- Connect to CarPlay for enhanced navigation'
+        ].join('\n')
+      },
+      {
+        part: 2,
+        message: [
+          `<info
+            title="Additional Resources"
+            content="• Guest Wifi access
+            • Microsoft Visitor Center
+            • Current campus events
+            • Dining at The Commons"
+          />`,
+          '',
+          'Feel free to view interactive map for a visual guide to your parking area.',
+          '',
+          'Would you like me to email you these parking instructions?'
+        ].join('\n')
+      }
+    ]
   }),
 
   errorResponse: {
