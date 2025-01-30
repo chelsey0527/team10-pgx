@@ -55,7 +55,7 @@ export const parseMessage = (text: string): React.JSX.Element[] => {
       addCurrentText();
       const boldText = line.slice(2, -2);
       parts.push(
-        <p key={index++} className="font-bold text-blue-600 mb-2">
+        <p key={index++} className="font-bold text-[#e58a2f] mb-2">
           {boldText}
         </p>
       );

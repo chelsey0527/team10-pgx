@@ -204,7 +204,7 @@ const Chatbot = () => {
               <div
                 className={`max-w-[80%] rounded-lg p-3 ${
                   message.sender === 'user'
-                    ? 'bg-blue-500 text-white'
+                    ? 'bg-[#e58a2f] text-white'
                     : 'bg-white text-black'
                 }`}
               >
@@ -227,7 +227,7 @@ const Chatbot = () => {
       {/* Message input */}
       <form
         onSubmit={handleSendMessage}
-        className="flex items-center gap-2 p-4 bg-[#F5EFE9] rounded-[40px] border border-white mb-4 mx-4"
+        className="flex items-center gap-2 px-4 py-2 bg-[#F5EFE9] rounded-[24px] border border-white mb-4 mx-2 shadow-lg"
       >
         <img 
           src="/copilot-logo-colored.png" 
@@ -239,7 +239,7 @@ const Chatbot = () => {
           value={inputMessage}
           onChange={(e) => setInputMessage(e.target.value)}
           placeholder="Message Copilot"
-          className="flex-1 p-2 px-4 rounded-[18px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="flex-1 p-2 px-4 rounded-[18px] focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-inner"
         />
         <button
           type="submit"

@@ -19,17 +19,15 @@ const Map = () => {
       <div className="flex gap-4 mb-8">
         <div className="flex-1 max-w-[200px] bg-white rounded-xl p-4 shadow-md">
           <div className="flex items-center gap-3">
-            <div className="text-[#BE8544] text-sm">P1</div>
-            <div className="text-4xl font-medium">16</div>
-            <div className="text-sm text-gray-800">spots available</div>
+            <div className="text-[#BE8544] text-lg">P1</div>
+            <div className="text-xl font-medium">16 spots</div>
           </div>
         </div>
         
         <div className="flex-1 max-w-[200px] bg-white rounded-xl p-4 shadow-md">
           <div className="flex items-center gap-3">
-            <div className="text-[#BE8544] text-sm">P2</div>
-            <span className="text-4xl font-medium">5</span>
-            <div className="text-sm text-gray-800">spots available</div>
+            <div className="text-[#BE8544] text-lg">P2</div>
+            <span className="text-xl font-medium">5 spots</span>
           </div>
         </div>
       </div>
