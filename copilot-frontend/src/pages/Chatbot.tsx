@@ -203,7 +203,7 @@ const Chatbot = () => {
               className={`max-w-[80%] rounded-lg p-3 ${
                 message.sender === 'user'
                   ? 'bg-[#e58a2f] text-white'
-                  : 'bg-white text-black'
+                  : ' text-black'
               }`}
             >
               {message.sender === 'bot' ? (
