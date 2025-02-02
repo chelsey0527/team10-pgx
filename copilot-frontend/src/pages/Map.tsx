@@ -40,12 +40,13 @@ const Map = () => {
     setTimeout(() => {
       setIsImageLoading(false);
     }, 1000);
+
   };
 
   return (
     <div className="flex flex-col h-[calc(100vh-5rem)] bg-gradient-to-b from-[#FCF9F6] to-[#f3e6d8] px-8 py-14">
       <span className="text-2xl mb-4 font-bold">Visitor Parking Spots Available </span>
-      <span className="text-lg text-gray-500 mb-6">Last update: {lastUpdateTime} secs ago</span>
+      <span className="text-lg text-gray-500 mb-6">Last update: {lastUpdateTime? lastUpdateTime : '30 secs'} ago</span>
       
       {/* Parking spot counters */}
       <div className="flex gap-4 mb-8">
