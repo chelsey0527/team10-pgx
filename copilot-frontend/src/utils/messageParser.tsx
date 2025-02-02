@@ -15,22 +15,29 @@ export const parseMessage = (text: string): React.JSX.Element[] => {
   };
 
   const lines = text.split('\n');
-  lines.forEach(line => {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    
     // Parse parking card
     if (line.includes('<parking')) {
       addCurrentText();
-      const matches = line.match(/location="([^"]*)" level="([^"]*)" zone="([^"]*)"/);
-      if (matches) {
+      const parkingMatch = text.match(/<parking[^>]*location="([^"]*)"[^>]*level="([^"]*)"[^>]*zone="([^"]*)"[^>]*>/s);
+      if (parkingMatch) {
         parts.push(
           <ParkingCard
             key={index++}
-            location={matches[1]}
-            level={matches[2]}
-            zone={matches[3]}
+            location={parkingMatch[1]}
+            level={parkingMatch[2]}
+            zone={parkingMatch[3]}
+            className="mb-10"
           />
         );
+        // Skip to closing tag
+        while (i < lines.length && !lines[i].includes('/>')) {
+          i++;
+        }
       }
-      return;
+      continue;
     }
 
     // Parse info card
@@ -47,19 +54,19 @@ export const parseMessage = (text: string): React.JSX.Element[] => {
           />
         );
       }
-      return;
+      continue;
     }
 
     // Parse bold text
-    if (line.startsWith('**') && line.endsWith('**')) {
+    if (line.includes('**')) {
       addCurrentText();
-      const boldText = line.slice(2, -2);
+      const boldText = line.replace(/\*\*(.*?)\*\*/g, '$1');
       parts.push(
-        <p key={index++} className="font-bold text-blue-600 mb-2">
+        <p key={index++} className="font-bold text-[#e58a2f] mb-2">
           {boldText}
         </p>
       );
-      return;
+      continue;
     }
 
     // Handle bullet points
@@ -70,7 +77,7 @@ export const parseMessage = (text: string): React.JSX.Element[] => {
           • {line.slice(2)}
         </p>
       );
-      return;
+      continue;
     }
 
     // Handle regular text
@@ -79,7 +86,7 @@ export const parseMessage = (text: string): React.JSX.Element[] => {
     } else {
       addCurrentText();
     }
-  });
+  }
 
   addCurrentText();
   return parts;

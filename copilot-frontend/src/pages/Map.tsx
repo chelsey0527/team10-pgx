@@ -1,13 +1,46 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import mapDemo from '../assets/map-demo.png';
 import mapDemoActual from '../assets/map-demo-actual.png';
 
 const Map = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [lastUpdateTime, setLastUpdateTime] = useState(null);
+  const [isImageLoading, setIsImageLoading] = useState(true);
+  const [lastUpdateTime, setLastUpdateTime] = useState(0);
+  const [parkingSpots, setParkingSpots] = useState({ p1: 16, p2: 5 });
+
+  useEffect(() => {
+    // Update every 30 seconds
+    const interval = setInterval(() => {
+      setLastUpdateTime(0);
+      // Randomly adjust parking spots within reasonable bounds
+      setParkingSpots(prev => ({
+        p1: Math.max(0, Math.min(20, prev.p1 + Math.floor(Math.random() * 3) - 1)),
+        p2: Math.max(0, Math.min(10, prev.p2 + Math.floor(Math.random() * 3) - 1))
+      }));
+    }, 1000);
+
+    // Update the "seconds ago" counter every second
+    const secondsInterval = setInterval(() => {
+      setLastUpdateTime(prev => prev + 1);
+    }, 1000);
+
+    return () => {
+      clearInterval(interval);
+      clearInterval(secondsInterval);
+    };
+  }, []);
 
   const handleImageClick = () => {
     setIsModalOpen(true);
+    setIsImageLoading(true);
+  };
+
+  const handleImageLoad = () => {
+    // Add minimum 1 second delay before hiding the loading spinner
+    setTimeout(() => {
+      setIsImageLoading(false);
+    }, 1000);
+
   };
 
   return (
@@ -19,17 +52,15 @@ const Map = () => {
       <div className="flex gap-4 mb-8">
         <div className="flex-1 max-w-[200px] bg-white rounded-xl p-4 shadow-md">
           <div className="flex items-center gap-3">
-            <div className="text-[#BE8544] text-sm">P1</div>
-            <div className="text-4xl font-medium">16</div>
-            <div className="text-sm text-gray-800">spots available</div>
+            <div className="text-[#BE8544] text-lg">P1</div>
+            <div className="text-xl font-medium">{parkingSpots.p1} spots</div>
           </div>
         </div>
         
         <div className="flex-1 max-w-[200px] bg-white rounded-xl p-4 shadow-md">
           <div className="flex items-center gap-3">
-            <div className="text-[#BE8544] text-sm">P2</div>
-            <span className="text-4xl font-medium">5</span>
-            <div className="text-sm text-gray-800">spots available</div>
+            <div className="text-[#BE8544] text-lg">P2</div>
+            <span className="text-xl font-medium">{parkingSpots.p2} spots</span>
           </div>
         </div>
       </div>
@@ -55,10 +86,17 @@ const Map = () => {
             >
               ✕
             </button>
+            {isImageLoading && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-white"></div>
+              </div>
+            )}
             <img 
               src={mapDemoActual}
               alt="Actual Map" 
               className="max-h-[90vh] max-w-[90vw]"
+              onLoad={handleImageLoad}
+              style={{ opacity: isImageLoading ? '0' : '1' }}
             />
           </div>
         </div>

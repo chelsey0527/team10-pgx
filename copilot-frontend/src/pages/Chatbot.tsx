@@ -23,7 +23,7 @@ const Chatbot = () => {
   
   const [messages, setMessages] = useState<Array<Message>>([]);
   const [inputMessage, setInputMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   
   // Add ref to track initialization
   const hasInitialized = React.useRef(false);
@@ -112,6 +112,8 @@ const Chatbot = () => {
     setInputMessage('');
 
     try {
+      setIsLoading(true); // Start loading
+      
       const newUserMessage = {
         text: userMessage,
         sender: 'user' as const,
@@ -162,6 +164,8 @@ const Chatbot = () => {
         sender: 'bot' as const,
         timestamp: new Date(),
       }]);
+    } finally {
+      setIsLoading(false); // Stop loading regardless of success/failure
     }
   };
 
@@ -188,38 +192,44 @@ const Chatbot = () => {
 
       {/* Chat messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {isLoading ? (
-          <div className="flex flex-col justify-center items-center h-full space-y-4">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#F5EFE9] border-t-blue-500"></div>
-            <p className="text-gray-500 animate-pulse">Loading conversation...</p>
-          </div>
-        ) : (
-          messages.map((message, index) => (
+        {messages.map((message, index) => (
+          <div
+            key={index}
+            className={`flex ${
+              message.sender === 'user' ? 'justify-end' : 'justify-start'
+            }`}
+          >
             <div
-              key={index}
-              className={`flex ${
-                message.sender === 'user' ? 'justify-end' : 'justify-start'
+              className={`max-w-[80%] rounded-lg p-3 ${
+                message.sender === 'user'
+                  ? 'bg-[#e58a2f] text-white'
+                  : ' text-black'
               }`}
             >
-              <div
-                className={`max-w-[80%] rounded-lg p-3 ${
-                  message.sender === 'user'
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-white text-black'
-                }`}
-              >
-                {message.sender === 'bot' ? (
-                  <div className="space-y-1">
-                    {parseMessage(message.text)}
-                  </div>
-                ) : (
-                  <span className="whitespace-pre-line">
-                    {formatBoldText(message.text)}
-                  </span>
-                )}
+              {message.sender === 'bot' ? (
+                <div className="space-y-1">
+                  {parseMessage(message.text)}
+                </div>
+              ) : (
+                <span className="whitespace-pre-line">
+                  {formatBoldText(message.text)}
+                </span>
+              )}
+            </div>
+          </div>
+        ))}
+        
+        {/* Loading indicator styled like a message */}
+        {isLoading && (
+          <div className="flex justify-start">
+            <div className="max-w-[80%] rounded-lg p-3 bg-white">
+              <div className="flex gap-2">
+                <div className="w-2 h-2 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: '-0.32s' }} />
+                <div className="w-2 h-2 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: '-0.16s' }} />
+                <div className="w-2 h-2 bg-gray-300 rounded-full animate-bounce" />
               </div>
             </div>
-          ))
+          </div>
         )}
         <div ref={messagesEndRef} />
       </div>
@@ -227,7 +237,7 @@ const Chatbot = () => {
       {/* Message input */}
       <form
         onSubmit={handleSendMessage}
-        className="flex items-center gap-2 p-4 bg-[#F5EFE9] rounded-[40px] border border-white mb-4 mx-4"
+        className="flex items-center gap-2 px-4 py-2 bg-[#F5EFE9] rounded-[24px] border border-white mb-4 mx-2 shadow-lg"
       >
         <img 
           src="/copilot-logo-colored.png" 
@@ -239,7 +249,7 @@ const Chatbot = () => {
           value={inputMessage}
           onChange={(e) => setInputMessage(e.target.value)}
           placeholder="Message Copilot"
-          className="flex-1 p-2 px-4 rounded-[18px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="flex-1 p-2 px-4 rounded-[18px] focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-inner"
         />
         <button
           type="submit"
@@ -266,3 +276,35 @@ const Chatbot = () => {
 };
 
 export default Chatbot;
+
+// Add these styles to your existing CSS
+const styles = `
+  .typing-indicator {
+    display: flex;
+    gap: 4px;
+    padding: 12px;
+    background: #f0f0f0;
+    border-radius: 20px;
+    width: fit-content;
+  }
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    background: #666;
+    border-radius: 50%;
+    animation: bounce 1.4s infinite ease-in-out;
+  }
+
+  .dot:nth-child(1) { animation-delay: -0.32s; }
+  .dot:nth-child(2) { animation-delay: -0.16s; }
+
+  @keyframes bounce {
+    0%, 80%, 100% { 
+      transform: scale(0);
+    } 
+    40% { 
+      transform: scale(1.0);
+    }
+  }
+`;
