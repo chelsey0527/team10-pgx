@@ -1,6 +1,7 @@
 import React from 'react';
 import { ParkingCard } from '../components/ParkingCard';
 import { InfoCard } from '../components/InfoCard';
+import { MeetingCard } from '../components/MeetingCard';
 
 export const parseMessage = (text: string): React.JSX.Element[] => {
   const parts: React.JSX.Element[] = [];
@@ -17,6 +18,32 @@ export const parseMessage = (text: string): React.JSX.Element[] => {
   const lines = text.split('\n');
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
+
+    // Parse meeting card
+    if (line.includes('<MeetingCard')) {
+      addCurrentText();
+      const eventNameMatch = line.match(/EventName="([^"]*)"/) || ['', 'PGX Weekly Meeting'];
+      const eventTimeMatch = line.match(/EventTime="([^"]*)"/) || ['', '2025-01-27 02:00 PM'];
+      const locationMatch = line.match(/Location="([^"]*)"/) || ['', 'Building 3'];
+      const eventHolder = line.match(/EventHolder="([^"]*)"/) || ['', 'Alex Morgan'];
+      
+      parts.push(
+        <MeetingCard 
+          key={index++} 
+          EventName={eventNameMatch[1]} 
+          EventTime={eventTimeMatch[1]} 
+          Location={locationMatch[1]} 
+          EventHolder={eventHolder[1]}
+        />
+      );
+      
+      // Skip to the end of the card markup
+      while (i < lines.length && !lines[i].includes('/>')) {
+        i++;
+      }
+      
+      continue;
+    }
     
     // Parse parking card
     if (line.includes('<parking')) {

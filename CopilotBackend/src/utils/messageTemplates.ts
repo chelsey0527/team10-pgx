@@ -19,6 +19,14 @@ export const messageTemplates = {
       `You are not allowed to modify recommendations on results, but when user has special needs like injury, pregnancy 
        for special needs (which is only STEP 3 in the sequence) you may customized some greeting words but really short and sweet.`,
       `(If steps being answered by user do not repeat the same question!, but briefly explain it if user asked again)`,
+
+      `TEMPLATES :`,
+      JSON.stringify({
+        contactAdmin: messageTemplates.contactAdmin(user, event).content,
+        carRegistration: messageTemplates.carRegistration(user, event).content,
+        parkingRecommendation: messageTemplates.parkingRecommendation(user, {}, event).content,
+        finalRecommendation: messageTemplates.finalRecommendation(user, event).content,
+      }),
       
       `The sequence:`,
       `1. (Already done in initial prompt) You double check meeting informations with the user. 
