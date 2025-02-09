@@ -1,7 +1,20 @@
 # Copolit Parking
 Copilot for Parking transforms current parking challenges into seamless, personalized, and brand-aligned experiences that meet user needs and elevate satisfaction.
 
-![gap analysis](./assets/gap-analysis.png)
+## Getting Started
+1. frontend setup
+```bash
+    cd copilot-frontend
+    npm install
+    npm start
+```
+2. backend setup
+```bash
+    cd CopilotBackend
+    npm install
+    npm start
+```
+
 
 ## System Architecture
 ![system design](./assets/system-design.png)
