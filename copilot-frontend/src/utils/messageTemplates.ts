@@ -5,7 +5,7 @@ export const messageTemplates = {
       `<MeetingCard 
         EventName="${eventData.name}"
         EventTime="${new Date(eventData.startTime).toLocaleString()}"
-        Location="Building${eventData.building}"
+        Location="${eventData.building}"
       />`,
       ``,
     `\nIs this the correct meeting information you'd like to use to pre-register parking?`,

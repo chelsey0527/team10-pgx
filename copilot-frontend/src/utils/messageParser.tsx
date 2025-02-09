@@ -1,5 +1,6 @@
 import React from 'react';
 import { ParkingCard } from '../components/ParkingCard';
+import { RegCard } from '../components/RegCard';
 import { InfoCard } from '../components/InfoCard';
 import { MeetingCard } from '../components/MeetingCard';
 
@@ -22,10 +23,19 @@ export const parseMessage = (text: string): React.JSX.Element[] => {
     // Parse meeting card
     if (line.includes('<MeetingCard')) {
       addCurrentText();
-      const eventNameMatch = line.match(/EventName="([^"]*)"/) || ['', 'PGX Weekly Meeting'];
-      const eventTimeMatch = line.match(/EventTime="([^"]*)"/) || ['', '2025-01-27 02:00 PM'];
-      const locationMatch = line.match(/Location="([^"]*)"/) || ['', 'Building 3'];
-      const eventHolder = line.match(/EventHolder="([^"]*)"/) || ['', 'Alex Morgan'];
+      
+      // Collect all lines of the MeetingCard until we find the closing tag
+      let cardContent = line;
+      while (i + 1 < lines.length && !lines[i].includes('/>')) {
+        i++;
+        cardContent += ' ' + lines[i];
+      }
+
+      console.log('Full meeting card content:', cardContent);
+      const eventNameMatch = cardContent.match(/EventName="([^"]*)"/) || ['', 'PGX Weekly Meeting'];
+      const eventTimeMatch = cardContent.match(/EventTime="([^"]*)"/) || ['', '2025-01-27 02:00 PM'];
+      const locationMatch = cardContent.match(/Location="([^"]*)"/) || ['', 'Building 3'];
+      const eventHolder = cardContent.match(/EventHolder="([^"]*)"/) || ['', 'Alex M'];
       
       parts.push(
         <MeetingCard 
@@ -37,10 +47,36 @@ export const parseMessage = (text: string): React.JSX.Element[] => {
         />
       );
       
-      // Skip to the end of the card markup
-      while (i < lines.length && !lines[i].includes('/>')) {
+      continue;
+    }
+
+    if (line.includes('<RegCard')) {
+      addCurrentText();
+      
+      // Collect all lines of the RegCard until we find the closing tag
+      let cardContent = line;
+      while (i + 1 < lines.length && !lines[i].includes('/>')) {
         i++;
+        cardContent += ' ' + lines[i];
       }
+
+      console.log('Full card content:', cardContent);
+      const carPlateMatch = cardContent.match(/carPlate="([^"]*)"/) || ['', '123carplate'];
+      const userMatch = cardContent.match(/user="([^"]*)"/) || ['', 'John Doe'];
+      const colorMatch = cardContent.match(/color="([^"]*)"/) || ['', 'Red'];
+      const stateMatch = cardContent.match(/state="([^"]*)"/) || ['', 'California'];
+      const dateMatch = cardContent.match(/date="([^"]*)"/) || ['', '2025-01-27 02:00 PM'];
+      
+      parts.push(
+        <RegCard 
+          key={index++} 
+          CarPlate={carPlateMatch[1]}
+          User={userMatch[1]}
+          Color={colorMatch[1]}
+          State={stateMatch[1]}
+          Date={dateMatch[1]}
+        />
+      );
       
       continue;
     }

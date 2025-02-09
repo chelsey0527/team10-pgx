@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { AppDispatch } from '../store/store';
 import { RootState } from '../store/store';
-import { setUser, setLoading as setUserLoading, setError as setUserError } from '../store/userSlice';
+import { setUser, setError as setUserError, setUserVehicleInfo } from '../store/userSlice';
 import { setEvent, setActivationCode } from '../store/activationSlice';
 import { getUserByActivationCode, createConversation, getConversationHistory, getSmartBotResponse, registerCarPlate } from '../services/api';
 import { messageTemplates } from '../utils/messageTemplates';
@@ -118,9 +118,19 @@ export const Chatbot = () => {
     }
   };
 
-  const handleSend = (e: React.MouseEvent) => {
-    e.preventDefault();
-    handleSendMessage(e);
+  const parseVehicleInfo = (message: string) => {
+    const parts = message.split(',').map(part => part.trim());
+    if (parts.length >= 2) {
+      const [carPlate, colorMake, state] = parts;
+      const [color, make] = colorMake.split('/').map(part => part.trim());
+      return {
+        carPlate,
+        carColor: color,
+        carMake: make,
+        carState: state
+      };
+    }
+    return null;
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -131,21 +141,24 @@ export const Chatbot = () => {
     setInputMessage('');
 
     try {
-      setIsLoading(true); // Start loading
+      setIsLoading(true);
       
+      // Check if this message might be a car plate
+      const lastBotMessage = messages[messages.length - 1];
+      if (lastBotMessage?.text.includes('drop your license plate number')) {
+        const vehicleInfo = parseVehicleInfo(userMessage);
+        if (vehicleInfo) {
+          await dispatch(setUserVehicleInfo(vehicleInfo));
+          await registerCarPlate(eventUser.id, JSON.stringify(vehicleInfo));
+        }
+      }
+
       const newUserMessage = {
         text: userMessage,
         sender: 'user' as const,
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, newUserMessage]);
-
-      // Check if this message might be a car plate (after the registration prompt)
-      const lastBotMessage = messages[messages.length - 1];
-      if (lastBotMessage?.text.includes('provide your license plate number')) {
-        // This is likely a car plate response
-        await registerCarPlate(eventUser.id, userMessage);
-      }
 
       await createConversation(eventUser.id, 'user', userMessage);
 
@@ -201,10 +214,13 @@ export const Chatbot = () => {
     if (inputRef.current) {
       inputRef.current.value = message;
       setInputMessage(message);
-      // Create a synthetic form event to trigger message send
-      const event = new Event('submit', { cancelable: true }) as unknown as React.FormEvent;
-      handleSendMessage(event);
     }
+  };
+
+  // Add back handleSend function
+  const handleSend = (e: React.MouseEvent) => {
+    e.preventDefault();
+    handleSendMessage(e);
   };
 
   return (
@@ -219,7 +235,7 @@ export const Chatbot = () => {
             }`}
           >
             <div
-              className={`max-w-[80%] rounded-[10px] px-3 py-2 text-sm ${
+              className={`max-w-[85%] rounded-[10px] px-3 py-2 text-sm ${
                 message.sender === 'user'
                   ? 'bg-[#FDE5CD] text-black'
                   : ' text-black'
@@ -280,6 +296,7 @@ export const Chatbot = () => {
           <button
             type="submit"
             className="p-2 rounded-full"
+            onClick={handleSend}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"

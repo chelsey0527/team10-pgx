@@ -210,33 +210,50 @@ router.post('/chat', async (req, res) => {
 router.post('/register-plate', async (req, res) => {
   try {
     const { eventUserId, carPlate } = req.body;
+    const vehicleInfo = JSON.parse(carPlate);
 
-    // First get the eventUser to find the associated user
     const eventUser = await prisma.eventUser.findUnique({
       where: { id: eventUserId },
-      include: { user: true }
+      include: { 
+        user: {
+          include: {
+            car: true
+          }
+        }
+      }
     });
 
     if (!eventUser) {
       return res.status(404).json({ error: 'Event user not found' });
     }
 
-    // Update the user's car plate
+    // Update or create car information
     const updatedUser = await prisma.user.update({
       where: { id: eventUser.userId },
-      data: { carPlate }
-    });
-
-    // Return the full eventUser with updated user data
-    const updatedEventUser = await prisma.eventUser.findUnique({
-      where: { id: eventUserId },
-      include: {
-        user: true,
-        event: true,
+      data: {
+        carPlate: vehicleInfo.carPlate, // Keep for backward compatibility
+        car: {
+          upsert: {
+            create: {
+              carPlate: vehicleInfo.carPlate,
+              carColor: vehicleInfo.carColor,
+              carMake: vehicleInfo.carMake,
+              carState: vehicleInfo.carState,
+            },
+            update: {
+              carColor: vehicleInfo.carColor,
+              carMake: vehicleInfo.carMake,
+              carState: vehicleInfo.carState,
+            }
+          }
+        }
       },
+      include: {
+        car: true
+      }
     });
 
-    res.json(updatedEventUser);
+    res.json(updatedUser);
   } catch (error) {
     console.error('Error registering car plate:', error);
     res.status(500).json({ error: 'Failed to register car plate' });

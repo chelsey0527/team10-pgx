@@ -1,4 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createAsyncThunk } from '@reduxjs/toolkit';
+import axios from 'axios';
 
 interface User {
   id: string;
@@ -6,6 +8,9 @@ interface User {
   firstName: string;
   lastName: string;
   carPlate?: string;
+  carColor?: string;
+  carMake?: string;
+  carState?: string;
   // ... other fields
 }
 
@@ -34,8 +39,29 @@ const userSlice = createSlice({
     setError: (state, action: PayloadAction<string | null>) => {
       state.error = action.payload;
     },
+    setVehicleInfo: (state, action) => {
+      if (state.user) {
+        state.user = {
+          ...state.user,
+          ...action.payload
+        };
+      }
+    }
   },
 });
 
 export const { setUser, setLoading, setError } = userSlice.actions;
+
+export const setUserVehicleInfo = createAsyncThunk(
+  'user/setVehicleInfo',
+  async (vehicleInfo: { carPlate: string, carColor?: string, carMake?: string, carState?: string }, { dispatch }) => {
+    try {
+      const response = await axios.post('/api/user/vehicle-info', vehicleInfo);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  }
+);
+
 export default userSlice.reducer; 

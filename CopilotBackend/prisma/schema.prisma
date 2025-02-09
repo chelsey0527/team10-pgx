@@ -20,7 +20,11 @@ model User {
   firstName       String
   lastName        String
   userType        String      @default("default")
-  carPlate        String?     // Add car plate to User model
+  carPlate        String?     // Keep this for backward compatibility
+  car             Car?        // Add relation to Car model
+  carColor        String?     // Add this
+  carMake         String?     // Add this
+  carState        String?     // Add this
   organizedEvents Event[]     // Relation to events organized by this user
   participatingIn Event[]     @relation("EventParticipants")
   eventUsers      EventUser[]
@@ -91,5 +95,19 @@ model Map {
   capacity         Int?      // Optional capacity for the parking area
   
   @@index([targetBuilding, assignedEntrance]) // Index for quick lookups in recommendation system
+}
+
+model Car {
+  id        String   @id @default(uuid())
+  carPlate  String   @unique
+  carColor  String?
+  carMake   String?
+  carState  String?
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 

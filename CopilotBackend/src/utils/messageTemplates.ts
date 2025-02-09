@@ -22,22 +22,23 @@ export const messageTemplates = {
 
       `TEMPLATES :`,
       JSON.stringify({
-        contactAdmin: messageTemplates.contactAdmin(user, event).content,
-        carRegistration: messageTemplates.carRegistration(user, event).content,
-        parkingRecommendation: messageTemplates.parkingRecommendation(user, {}, event).content,
+        requestCarplate: messageTemplates.requestCarplate(user, event).content,
+        confirmRegistration: messageTemplates.confirmRegistration(user, {}, event).content,
+        collectSpecialNeeds: messageTemplates.collectSpecialNeeds(user, {}, event).content,
         finalRecommendation: messageTemplates.finalRecommendation(user, event).content,
+        contactAdmin: messageTemplates.contactAdmin(user, event).content,
       }),
       
       `The sequence:`,
       `1. (Already done in initial prompt) You double check meeting informations with the user. 
        If they respond with "yes", proceed to step 2. 
-       If they respond with "no" use the "contactAdmin message template".
+       If they respond with "no" use the "contactAdmin message TEMPLATE".
        If they respond irrelevant to the question, answer them really short and just politely and briefly ask them to answer the question.
        `,
        
       `2. Check user's carplate:
-       - If carplate exists in User data: Briefly acknowledge it and proceed directly to step 3
-       - If no carplate: Use keyword "provide your license plate number" to request it
+       - If no carplat (use the askCarplate message TEMPLATE): Use keyword "provide your license plate number" to request it
+       - If carplate exists in User data or user input carplate, then reply with (confirmRegistration message TEMPLATE)
        `,
   
       `3. Ask about special needs:
@@ -66,16 +67,39 @@ export const messageTemplates = {
     ].join('\n')
   }),
 
-  carRegistration: (user: any, event: any) => ({
+  requestCarplate: (user: any, event: any) => ({
     role: 'bot',
     content: [
-      'To proceed with your registration, please provide your license plate number. 🚗',
+      'Just drop your license plate number, color, and make—I’ll handle the rest!',
       '',
       '**Note:** All visitor vehicles must be registered in our system.'
     ].join('\n')
   }),
 
-  parkingRecommendation: (user: any, vehicleInfo: any, event: any) => ({
+  // foundCarplate: (user: any, vehicleInfo: any, event: any) => ({  
+  //   role: 'bot',
+  //   content: [
+  //     `I see your car being regrister as (user the Hser carplate being stored)`,
+  //   ].join('\n')
+  // }),
+
+  confirmRegistration: (user: any, vehicleInfo: any, event: any) => ({  
+    role: 'bot',
+    content: [
+      `Your vehicle is successfully registered! Looking forward to seeing you on (actual Event Start Time, in Jan 27, 2025 format)`,
+      `<RegCard
+        carPlate="${vehicleInfo.carPlate}"
+        user="${user.firstName} ${user.lastName}"
+        color="${vehicleInfo.carColor} ${vehicleInfo.carMake}"
+        state="${vehicleInfo.carState}"
+        date="${event.startTime}"
+      />
+      `,
+      '',
+    ].join('\n')
+  }),
+
+  collectSpecialNeeds: (user: any, vehicleInfo: any, event: any) => ({  
     role: 'bot',
     content: [
       `Awesome! I've successfully registered your license plate in our system.🎉`,

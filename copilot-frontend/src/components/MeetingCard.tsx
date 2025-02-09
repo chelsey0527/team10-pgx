@@ -33,7 +33,7 @@ export const MeetingCard: React.FC<MeetingCardProps> = ({ EventName, EventTime, 
       </div>
       <p className="flex items-center gap-2">
         <img src={MapPinIcon} alt="location" className="h-4 w-4" />
-        {Location}
+        Building {Location}
       </p>
       <p className="flex items-center gap-2">
         <img src={UsersIcon} alt="users" className="h-4 w-4" />
