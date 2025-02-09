@@ -248,6 +248,7 @@ export const Chatbot = () => {
                   alt="Loading..." 
                   className="w-8 h-8 animate-pulse"
                 />
+                <span className=" ml-2 text-sm animate-pulse">Generating response...</span>
               </div>
             </div>
           </div>
