@@ -2,6 +2,7 @@ import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import axios from 'axios';
 import { messageTemplates } from '../utils/messageTemplates';
+// import { findBestParking, ParkingGraph, ParkingPreferences } from '../utils/parkingRecommendation';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -239,5 +240,81 @@ router.post('/register-plate', async (req, res) => {
     res.status(500).json({ error: 'Failed to register car plate' });
   }
 });
+
+// router.post('/recommend-parking', async (req, res) => {
+//   try {
+//     const { 
+//       eventUserId,
+//       entranceId,
+//       preferences
+//     }: {
+//       eventUserId: string;
+//       entranceId: string;
+//       preferences: ParkingPreferences;
+//     } = req.body;
+
+//     // Get event details to load correct parking graph
+//     const eventUser = await prisma.eventUser.findUnique({
+//       where: { id: eventUserId },
+//       include: { event: true }
+//     });
+
+//     if (!eventUser || !eventUser.event) {
+//       throw new Error('Event user or event not found');
+//     }
+
+//     // In the future, this would come from your database based on the event
+//     const parkingGraph: ParkingGraph = {
+//       nodes: [
+//         // Example nodes - in production, load from database
+//         {
+//           id: 'entrance1',
+//           type: 'entrance',
+//           coordinates: { x: 0, y: 0, z: 0 }
+//         },
+//         {
+//           id: 'parking1',
+//           type: 'parking',
+//           coordinates: { x: 10, y: 10, z: 0 },
+//           features: {
+//             isEV: true,
+//             nearElevator: true
+//           }
+//         }
+//         // ... more nodes
+//       ],
+//       edges: [
+//         // Example edges - in production, load from database
+//         {
+//           from: 'entrance1',
+//           to: 'parking1',
+//           weight: 10
+//         }
+//         // ... more edges
+//       ]
+//     };
+
+//     const recommendation = findBestParking(parkingGraph, entranceId, preferences);
+
+//     // Store the recommendation in the conversation
+//     await prisma.conversation.create({
+//       data: {
+//         conversationId: eventUserId,
+//         eventUserId,
+//         sender: 'bot',
+//         message: `I've found the perfect parking spot for you! Follow this path: ${recommendation.path.join(' → ')}`,
+//       },
+//     });
+
+//     res.json({
+//       success: true,
+//       recommendation
+//     });
+
+//   } catch (error) {
+//     console.error('Error generating parking recommendation:', error);
+//     res.status(500).json({ error: 'Failed to generate parking recommendation' });
+//   }
+// });
 
 export default router; 
