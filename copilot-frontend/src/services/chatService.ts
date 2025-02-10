@@ -1,7 +1,6 @@
 import { createConversation, getSmartBotResponse, getConversationHistory } from './api';
 import { messageTemplates } from '../utils/messageTemplates';
-import { parseMessage } from '../utils/messageParser';
-
+import {parseMessage} from '../utils/messageParser';
 
 interface ConversationMessage {
   message: string;
@@ -9,7 +8,7 @@ interface ConversationMessage {
   createdAt: string | Date;
 }
 
-export const initializeChatSession = async (userData: any, eventData: any, eventUserId: string) => {
+export const initializeChatSession = async (userData: any, eventData: any, eventUserId: string, dispatch: any) => {
   // First try to load existing conversation history
   try {
     const history = await getConversationHistory(eventUserId);
@@ -17,7 +16,7 @@ export const initializeChatSession = async (userData: any, eventData: any, event
     if (history && history.length > 0) {
       // Parse messages when formatting for UI
       return history.map((msg: ConversationMessage) => ({
-        text: parseMessage(msg.message),
+        text: parseMessage(msg.message, dispatch),
         sender: msg.sender,
         timestamp: new Date(msg.createdAt),
       }));
@@ -34,7 +33,7 @@ export const initializeChatSession = async (userData: any, eventData: any, event
   }
 
   return [{
-    text: parseMessage(initialMessage.content),
+    text: parseMessage(initialMessage.content, dispatch),
     sender: 'bot' as const,
     timestamp: new Date(),
   }];

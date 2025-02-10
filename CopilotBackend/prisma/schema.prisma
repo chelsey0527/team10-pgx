@@ -111,3 +111,33 @@ model Car {
   @@index([userId])
 }
 
+model Garage {
+  id                 String   @id @default(uuid())
+  tag                String   // accessible, general, carpool, ev, vendor, patrol, cbre
+  color              String   // blue, orange, green
+  zone               String   // A, B, C, D
+  spots              Int      // number of parking spots
+  elevator1          String   // North, West, East, South
+  elevatorBuilding1  String   // building numbers served by elevator1
+  weight1            Int      // priority weight for elevator1
+  elevator2          String   // North, West, East, South
+  elevatorBuilding2  String   // building numbers served by elevator2
+  weight2            Int      // priority weight for elevator2
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([color, tag])
+  @@index([zone, spots])
+}
+
+model EntranceAndExit {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  color     String   // blue, orange, green
+  address   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([color])
+}
+

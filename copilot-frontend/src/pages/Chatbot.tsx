@@ -243,7 +243,7 @@ export const Chatbot = () => {
             >
               {message.sender === 'bot' ? (
                 <div className="space-y-2">
-                  {parseMessage(message.text)}
+                  {parseMessage(message.text, dispatch)}
                 </div>
               ) : (
                 <span className="whitespace-pre-line">
@@ -274,7 +274,7 @@ export const Chatbot = () => {
 
       {/* Message input */}
       <div className=" p-4">
-        <ActionButtons onActionClick={handleActionClick} />
+        <ActionButtons onActionClick={handleActionClick} agentMessage={messages[messages.length - 1]?.text} />
         <form
           onSubmit={handleSendMessage}
           className="flex items-center gap-2 px-4 py-2 bg-[#F5EFE9] rounded-[24px] border border-white shadow-lg"

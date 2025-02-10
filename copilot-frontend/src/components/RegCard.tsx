@@ -5,6 +5,7 @@ interface RegCardProps {
   CarPlate: string;
   User: string;
   Color: string;
+	Make: string;
   State: string;
   Date: string;
 }
@@ -21,8 +22,8 @@ const formatEventTime = (timeString: string) => {
   })}, ${date.getHours() % 12 || 12}${date.getMinutes() ? `:${date.getMinutes()}` : ''}${date.getHours() >= 12 ? 'pm' : 'am'}-${endDate.getHours() % 12 || 12}:${endDate.getMinutes()}${endDate.getHours() >= 12 ? 'pm' : 'am'} (PST)`;
 };
 
-export const RegCard: React.FC<RegCardProps> = ({ CarPlate, User, Color, State, Date }) => (
-    <div className="bg-white rounded-[15px] p-6 shadow-md border border-gray-200 my-2 mb-10">
+export const RegCard: React.FC<RegCardProps> = ({ CarPlate, User, Color, Make, State, Date }) => (
+    <div className="bg-white rounded-[15px] p-3 shadow-md border border-gray-200 my-2 mb-10">
       <div className="space-y-2">
         {/* License Plate Row */}
         <div className="flex items-center justify-between">
@@ -43,7 +44,7 @@ export const RegCard: React.FC<RegCardProps> = ({ CarPlate, User, Color, State, 
 					</div>
 					<div className="grid grid-cols-3 py-2 border-b border-gray-200">
 						<span className="text-gray-400">Color/Make</span>
-						<span className="font-medium text-right col-span-2">{Color}</span>
+						<span className="font-medium text-right col-span-2">{Color} {Make}</span>
 					</div>
 					<div className="grid grid-cols-3 py-2 border-b border-gray-200">
 						<span className="text-gray-400">State</span>

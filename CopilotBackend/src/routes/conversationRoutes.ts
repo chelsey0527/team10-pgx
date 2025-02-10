@@ -2,6 +2,7 @@ import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import axios from 'axios';
 import { messageTemplates } from '../utils/messageTemplates';
+import { getParkingRecommendation } from '../utils/parkingRecommendation';
 // import { findBestParking, ParkingGraph, ParkingPreferences } from '../utils/parkingRecommendation';
 
 const router = express.Router();
@@ -94,8 +95,24 @@ router.post('/smart-response', async (req, res) => {
       content: msg.message,
     }));
 
+    // Before getting recommendation, extract special needs from conversation
+    const specialNeeds = {
+      needsEV: conversationHistory.some(msg => msg.message.toLowerCase().includes('ev charging')),
+      needsAccessible: conversationHistory.some(msg => 
+        msg.message.toLowerCase().includes('accessibility') || 
+        msg.message.toLowerCase().includes('wheelchair')),
+      needsCloserToElevator: conversationHistory.some(msg => 
+        msg.message.toLowerCase().includes('injuries') || 
+        msg.message.toLowerCase().includes('pregnancy'))
+    };
+
+    const recommendation = await getParkingRecommendation(
+      event.meetingBuilding,
+      specialNeeds
+    );
+
     const messages = [
-      messageTemplates.initialGreeting(user, event),
+      messageTemplates.initialGreeting(user, event, recommendation),
       ...formattedHistory,
       { role: 'user', content: message }
     ];
@@ -195,7 +212,7 @@ router.post('/chat', async (req, res) => {
     // Log which template is being used
     if (message.toLowerCase() === 'no') {
       console.log('Using contactAdmin template');
-      return res.json(messageTemplates.contactAdmin(user, event));
+      return res.json(messageTemplates.contactAdmin());
     }
 
     // Add more logging for different stages
