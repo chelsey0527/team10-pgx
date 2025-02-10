@@ -8,6 +8,7 @@ import { RootState } from '../store/store';
 import Draggable from 'react-draggable';
 import { mapConfigs } from '../config/mapConfigs';
 import MapMarker from '../components/MapMarker';
+import voiceIcon from '../assets/icon/Voice.png';
 // import { getParkingRecommendation } from '../services/api';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3001';
@@ -123,6 +124,14 @@ const Map = () => {
     return mapConfigs['general-blue-b1'];
   };
 
+  const [selectedLevel, setSelectedLevel] = useState('P1');
+
+  // Add this new function to handle level selection
+  const handleLevelSelect = (level: string) => {
+    setSelectedLevel(level);
+    // Here you can add logic to change the map view based on level
+  };
+
   return (
     <div className="flex flex-col h-[calc(100vh-5rem)] bg-gradient-to-b from-[#FCF9F6] to-[#f3e6d8] pt-10 pb-2">
       <span className="text-lg mb-4 font-bold px-8">Visitor Parking Spots Available </span>
@@ -147,7 +156,7 @@ const Map = () => {
         </div>
       </div>
       
-      {/* Main map container with flex centering */}
+      {/* Main map container - add relative positioning */}
       <div className="flex-1 flex items-start justify-center overflow-hidden relative" ref={mapContainerRef}>
         <Draggable
           bounds={dragBounds}
@@ -167,6 +176,31 @@ const Map = () => {
             ))}
           </div>
         </Draggable>
+
+        {/* Add the vertical level selector */}
+        <div className="absolute left-4 bottom-4 flex flex-col py-2 gap-1 bg-[#F7F7F7] rounded-xl overflow-hidden">
+          {['P1', 'P2', 'P3', 'P4'].map((level) => (
+            <button
+              key={level}
+              onClick={() => handleLevelSelect(level)}
+              className={`px-4 py-2 text-sm transition-colors ${
+                selectedLevel === level
+                  ?  'text-black font-bold'
+                  : 'text-gray-400 '
+              }`}
+            >
+              {level}
+            </button>
+          ))}
+        </div>
+
+        {/* Add Voice Mode button */}
+        <div className="absolute right-4 bottom-2 opacity-90">
+          <div className="flex items-center gap-2 bg-[#F7F7F7] rounded-xl px-4 py-2">
+            <img src={voiceIcon} alt="Voice Mode" className="w-5 h-5" />
+            <span className="text-sm text-gray-600">Voice Mode</span>
+          </div>
+        </div>
       </div>
 
       {/* Modal popup */}
