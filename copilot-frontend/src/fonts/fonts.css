@@ -1,13 +1,13 @@
 @font-face {
   font-family: 'ABC Ginto';
   src: url('./ABCGinto-Regular-Trial.woff') format('woff');
-  font-weight: normal;
+  font-weight: 300;
   font-style: normal;
 }
 
 @font-face {
   font-family: 'ABC Ginto';
   src: url('./ABCGinto-Bold-Trial.woff') format('woff');
-  font-weight: bold;
+  font-weight: 700;
   font-style: normal;
-} 
+}

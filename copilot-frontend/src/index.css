@@ -3,7 +3,8 @@
 @tailwind utilities;
 
 body {
-  font-family: 'ABC Ginto', sans-serif;
+  /* font-family: 'ABC Ginto', sans-serif; */
+  font-family: sans-serif;
   min-width: 375px;
   overflow-x: auto;
 } 

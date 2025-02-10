@@ -1,130 +1,96 @@
-// import PriorityQueue from 'priorityqueuejs';
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
 
-// interface Coordinates {
-//   x: number;
-//   y: number;
-//   z: number; // floor level
-// }
+interface SpecialNeeds {
+  needsEV?: boolean;
+  needsAccessible?: boolean;
+  needsCloserToElevator?: boolean;
+}
 
-// interface ParkingNode {
-//   id: string;
-//   type: 'entrance' | 'parking' | 'elevator';
-//   coordinates: Coordinates;
-//   features?: {
-//     isEV?: boolean;
-//     isAccessible?: boolean;
-//     nearStairs?: boolean;
-//     nearElevator?: boolean;
-//   };
-// }
+interface ParkingRecommendation {
+  location: string;
+  elevator: string;
+  spots: number;
+  color: string;
+  zone: string;
+  showMapNotification: boolean;
+}
 
-// interface ParkingGraph {
-//   nodes: ParkingNode[];
-//   edges: {
-//     from: string;
-//     to: string;
-//     weight: number;
-//   }[];
-// }
+export async function getParkingRecommendation(
+  buildingNumber: string,
+  specialNeeds: SpecialNeeds
+): Promise<ParkingRecommendation> {
+  // First, find garages that serve this building and match special needs
+  const garages = await prisma.garage.findMany({
+    where: {
+      OR: [
+        { elevatorBuilding1: { contains: buildingNumber } },
+        { elevatorBuilding2: { contains: buildingNumber } }
+      ],
+      // Filter by tag based on special needs
+      tag: specialNeeds.needsEV ? 'ev' : 
+           specialNeeds.needsAccessible ? 'accessible' : 
+           'general',
+      // Only include garages with available spots
+      spots: {
+        gt: 0
+      }
+    }
+  });
 
-// interface ParkingPreferences {
-//   needsEV?: boolean;
-//   needsAccessible?: boolean;
-//   preferStairs?: boolean;
-//   preferElevator?: boolean;
-//   targetBuilding?: string;
-// }
+  if (!garages.length) {
+    throw new Error('No suitable parking spots found');
+  }
 
-// function heuristic(node: ParkingNode, goalNode: ParkingNode): number {
-//   // Manhattan distance + floor level difference
-//   return (
-//     Math.abs(node.coordinates.x - goalNode.coordinates.x) +
-//     Math.abs(node.coordinates.y - goalNode.coordinates.y) +
-//     Math.abs(node.coordinates.z - goalNode.coordinates.z) * 2 // Extra weight for floor changes
-//   );
-// }
-
-// function findBestParking(
-//   graph: ParkingGraph,
-//   startNodeId: string,
-//   preferences: ParkingPreferences
-// ): { path: string[]; score: number } {
-//   const startNode = graph.nodes.find(n => n.id === startNodeId);
-//   if (!startNode) throw new Error('Start node not found');
-
-//   // Filter parking spots based on preferences
-//   const validParkingSpots = graph.nodes.filter(node => {
-//     if (node.type !== 'parking') return false;
-//     if (preferences.needsEV && !node.features?.isEV) return false;
-//     if (preferences.needsAccessible && !node.features?.isAccessible) return false;
-//     return true;
-//   });
-
-//   let bestSpot = null;
-//   let bestScore = Infinity;
-//   let bestPath = [];
-
-//   for (const parkingSpot of validParkingSpots) {
-//     const result = aStar(graph, startNode, parkingSpot);
+  // Score each garage based on:
+  // 1. Number of available spots (more spots = better)
+  // 2. Weight/proximity to destination building
+  // 3. If user needs closer to elevator access, prioritize that
+  const scoredGarages = garages.map(garage => {
+    let score = 0;
     
-//     // Calculate preference score (lower is better)
-//     let preferenceScore = result.distance;
-//     if (preferences.preferStairs && !parkingSpot.features?.nearStairs) preferenceScore += 5;
-//     if (preferences.preferElevator && !parkingSpot.features?.nearElevator) preferenceScore += 5;
+    // Score based on spots (normalize to 0-100)
+    score += (garage.spots / Math.max(...garages.map(g => g.spots))) * 100;
     
-//     if (preferenceScore < bestScore) {
-//       bestScore = preferenceScore;
-//       bestSpot = parkingSpot;
-//       bestPath = result.path;
-//     }
-//   }
+    // Score based on best weight to the building
+    const bestWeight = Math.max(
+      garage.elevatorBuilding1.includes(buildingNumber) ? garage.weight1 : 0,
+      garage.elevatorBuilding2.includes(buildingNumber) ? garage.weight2 : 0
+    );
+    score += bestWeight * 50; // Weight proximity heavily
 
-//   return { path: bestPath, score: bestScore };
-// }
+    // If user needs closer elevator access, prioritize weight even more
+    if (specialNeeds.needsCloserToElevator) {
+      score += bestWeight * 25;
+    }
 
-// function aStar(graph: ParkingGraph, start: ParkingNode, goal: ParkingNode) {
-//   const openSet = new PriorityQueue<{ node: ParkingNode; fScore: number }>(
-//     (a, b) => a.fScore < b.fScore
-//   );
-  
-//   const gScore: Map<string, number> = new Map();
-//   const fScore: Map<string, number> = new Map();
-//   const cameFrom: Map<string, string> = new Map();
+    return {
+      garage,
+      score,
+      bestWeight
+    };
+  });
 
-//   gScore.set(start.id, 0);
-//   fScore.set(start.id, heuristic(start, goal));
-//   openSet.push({ node: start, fScore: fScore.get(start.id)! });
+  // Sort by score descending
+  scoredGarages.sort((a, b) => b.score - a.score);
 
-//   while (!openSet.isEmpty()) {
-//     const current = openSet.pop()!.node;
+  // Get the best matching garage
+  const bestMatch = scoredGarages[0];
+  const bestGarage = bestMatch.garage;
 
-//     if (current.id === goal.id) {
-//       // Reconstruct path
-//       const path = [];
-//       let currentId = goal.id;
-//       while (currentId) {
-//         path.unshift(currentId);
-//         currentId = cameFrom.get(currentId)!;
-//       }
-//       return { path, distance: gScore.get(goal.id)! };
-//     }
+  // Determine which elevator is closer to the building
+  const useElevator1 = 
+    bestGarage.elevatorBuilding1.includes(buildingNumber) && 
+    bestGarage.weight1 >= (bestGarage.weight2 || 0);
 
-//     const edges = graph.edges.filter(e => e.from === current.id);
-//     for (const edge of edges) {
-//       const neighbor = graph.nodes.find(n => n.id === edge.to)!;
-//       const tentativeGScore = gScore.get(current.id)! + edge.weight;
+  const recommendation = {
+    location: `${bestGarage.color} Zone ${bestGarage.zone}`,
+    elevator: useElevator1 ? bestGarage.elevator1 : bestGarage.elevator2,
+    spots: bestGarage.spots,
+    color: bestGarage.color,
+    zone: bestGarage.zone,
+    showMapNotification: true
+  };
 
-//       if (!gScore.has(neighbor.id) || tentativeGScore < gScore.get(neighbor.id)!) {
-//         cameFrom.set(neighbor.id, current.id);
-//         gScore.set(neighbor.id, tentativeGScore);
-//         const f = tentativeGScore + heuristic(neighbor, goal);
-//         fScore.set(neighbor.id, f);
-//         openSet.push({ node: neighbor, fScore: f });
-//       }
-//     }
-//   }
-
-//   return { path: [], distance: Infinity };
-// }
-
-// export { findBestParking, type ParkingGraph, type ParkingPreferences }; 
+  return recommendation;
+}

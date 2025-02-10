@@ -36,6 +36,7 @@ router.post('/verify-registration', async (req: Request, res: Response) => {
             success: true,
             data: {
                 userId: eventUser.id
+                
             }
         });
     } catch (error) {

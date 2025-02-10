@@ -2,6 +2,7 @@ import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import axios from 'axios';
 import { messageTemplates } from '../utils/messageTemplates';
+import { getParkingRecommendation } from '../utils/parkingRecommendation';
 // import { findBestParking, ParkingGraph, ParkingPreferences } from '../utils/parkingRecommendation';
 
 const router = express.Router();
@@ -94,8 +95,24 @@ router.post('/smart-response', async (req, res) => {
       content: msg.message,
     }));
 
+    // Before getting recommendation, extract special needs from conversation
+    const specialNeeds = {
+      needsEV: conversationHistory.some(msg => msg.message.toLowerCase().includes('ev charging')),
+      needsAccessible: conversationHistory.some(msg => 
+        msg.message.toLowerCase().includes('accessibility') || 
+        msg.message.toLowerCase().includes('wheelchair')),
+      needsCloserToElevator: conversationHistory.some(msg => 
+        msg.message.toLowerCase().includes('injuries') || 
+        msg.message.toLowerCase().includes('pregnancy'))
+    };
+
+    const recommendation = await getParkingRecommendation(
+      event.meetingBuilding,
+      specialNeeds
+    );
+
     const messages = [
-      messageTemplates.initialGreeting(user, event),
+      messageTemplates.initialGreeting(user, event, recommendation),
       ...formattedHistory,
       { role: 'user', content: message }
     ];
@@ -125,41 +142,41 @@ router.post('/smart-response', async (req, res) => {
     const aiMessage = response.data.choices[0]?.message?.content || '';
     
     // Force the correct template only in specific scenarios
-    let finalMessage = aiMessage;
+    // let finalMessage = aiMessage;
 
     // Only force templates in very specific cases
-    if ((aiMessage.toLowerCase().includes('provide your license plate') || 
-         aiMessage.toLowerCase().includes('register your vehicle')) && 
-        !aiMessage.toLowerCase().includes('already have your')) {
-      finalMessage = messageTemplates.carRegistration(user, event).content;
-    } 
-    else if ((aiMessage.toLowerCase().includes('customized cards for visualization')) && 
-    (aiMessage.toLowerCase().includes('your final parking details') ||
-             aiMessage.toLowerCase().includes('here is your final parking details') || 
-             aiMessage.toLowerCase().includes('view interactive map'))) {
-      finalMessage = messageTemplates.finalRecommendation(user, event).content;
-    }
-    else if (aiMessage.toLowerCase().includes('contact the event organizer') || 
-             aiMessage.toLowerCase().includes('meeting information incorrect')) {
-      finalMessage = messageTemplates.contactAdmin(user, event).content;
-    }
-    // For special needs responses, combine AI response with template
-    else if (aiMessage.toLowerCase().includes('parking') && 
-             aiMessage.toLowerCase().includes('recommend') &&
-             (aiMessage.toLowerCase().includes('pregnant') || 
-              aiMessage.toLowerCase().includes('injury') || 
-              aiMessage.toLowerCase().includes('accessibility'))) {
-      // Extract first sentence using regex only for special needs acknowledgment
-      const firstSentence = aiMessage.match(/^[^.!?]+[.!?]/)?.[0] || aiMessage;
-      finalMessage = `${firstSentence}\n\n${messageTemplates.finalRecommendation(user, event).content}`;
-    }
-    // Keep original AI response for all other cases
-    else {
-      finalMessage = aiMessage;
-    }
+    // if ((aiMessage.toLowerCase().includes('provide your license plate') || 
+    //      aiMessage.toLowerCase().includes('register your vehicle')) && 
+    //     !aiMessage.toLowerCase().includes('already have your')) {
+    //   finalMessage = messageTemplates.carRegistration(user, event).content;
+    // } 
+    // else if ((aiMessage.toLowerCase().includes('customized cards for visualization')) && 
+    // (aiMessage.toLowerCase().includes('your final parking details') ||
+    //          aiMessage.toLowerCase().includes('here is your final parking details') || 
+    //          aiMessage.toLowerCase().includes('view interactive map'))) {
+    //   finalMessage = messageTemplates.finalRecommendation(user, event).content;
+    // }
+    // else if (aiMessage.toLowerCase().includes('contact the event organizer') || 
+    //          aiMessage.toLowerCase().includes('meeting information incorrect')) {
+    //   finalMessage = messageTemplates.contactAdmin(user, event).content;
+    // }
+    // // For special needs responses, combine AI response with template
+    // else if (aiMessage.toLowerCase().includes('parking') && 
+    //          aiMessage.toLowerCase().includes('recommend') &&
+    //          (aiMessage.toLowerCase().includes('pregnant') || 
+    //           aiMessage.toLowerCase().includes('injury') || 
+    //           aiMessage.toLowerCase().includes('accessibility'))) {
+    //   // Extract first sentence using regex only for special needs acknowledgment
+    //   const firstSentence = aiMessage.match(/^[^.!?]+[.!?]/)?.[0] || aiMessage;
+    //   finalMessage = `${firstSentence}\n\n${messageTemplates.finalRecommendation(user, event).content}`;
+    // }
+    // // Keep original AI response for all other cases
+    // else {
+    //   finalMessage = aiMessage;
+    // }
     
     console.log('AI Response:', aiMessage);
-    console.log('Final Message after template check:', finalMessage);
+    // console.log('Final Message after template check:', finalMessage);
 
     // Store the bot's response with the forced template
     await prisma.conversation.create({
@@ -167,11 +184,13 @@ router.post('/smart-response', async (req, res) => {
         conversationId: eventUserId,
         eventUserId,
         sender: 'bot',
-        message: finalMessage,
+        // message: finalMessage,
+        message: aiMessage,
       },
     });
 
-    res.json({ message: finalMessage });
+    // res.json({ message: finalMessage });
+    res.json({ message: aiMessage });
   } catch (error: any) {
     console.error('Smart response error:', error);
     res.status(500).json({ 
@@ -193,7 +212,7 @@ router.post('/chat', async (req, res) => {
     // Log which template is being used
     if (message.toLowerCase() === 'no') {
       console.log('Using contactAdmin template');
-      return res.json(messageTemplates.contactAdmin(user, event));
+      return res.json(messageTemplates.contactAdmin());
     }
 
     // Add more logging for different stages
@@ -208,33 +227,50 @@ router.post('/chat', async (req, res) => {
 router.post('/register-plate', async (req, res) => {
   try {
     const { eventUserId, carPlate } = req.body;
+    const vehicleInfo = JSON.parse(carPlate);
 
-    // First get the eventUser to find the associated user
     const eventUser = await prisma.eventUser.findUnique({
       where: { id: eventUserId },
-      include: { user: true }
+      include: { 
+        user: {
+          include: {
+            car: true
+          }
+        }
+      }
     });
 
     if (!eventUser) {
       return res.status(404).json({ error: 'Event user not found' });
     }
 
-    // Update the user's car plate
+    // Update or create car information
     const updatedUser = await prisma.user.update({
       where: { id: eventUser.userId },
-      data: { carPlate }
-    });
-
-    // Return the full eventUser with updated user data
-    const updatedEventUser = await prisma.eventUser.findUnique({
-      where: { id: eventUserId },
-      include: {
-        user: true,
-        event: true,
+      data: {
+        carPlate: vehicleInfo.carPlate, // Keep for backward compatibility
+        car: {
+          upsert: {
+            create: {
+              carPlate: vehicleInfo.carPlate,
+              carColor: vehicleInfo.carColor,
+              carMake: vehicleInfo.carMake,
+              carState: vehicleInfo.carState,
+            },
+            update: {
+              carColor: vehicleInfo.carColor,
+              carMake: vehicleInfo.carMake,
+              carState: vehicleInfo.carState,
+            }
+          }
+        }
       },
+      include: {
+        car: true
+      }
     });
 
-    res.json(updatedEventUser);
+    res.json(updatedUser);
   } catch (error) {
     console.error('Error registering car plate:', error);
     res.status(500).json({ error: 'Failed to register car plate' });

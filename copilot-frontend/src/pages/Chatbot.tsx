@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { AppDispatch } from '../store/store';
 import { RootState } from '../store/store';
-import { setUser, setLoading as setUserLoading, setError as setUserError } from '../store/userSlice';
+import { setUser, setError as setUserError, setUserVehicleInfo } from '../store/userSlice';
 import { setEvent, setActivationCode } from '../store/activationSlice';
 import { getUserByActivationCode, createConversation, getConversationHistory, getSmartBotResponse, registerCarPlate } from '../services/api';
 import { messageTemplates } from '../utils/messageTemplates';
 import { setShowMapNotification } from '../store/navigationSlice';
 import { Message } from '../types/message';
 import { parseMessage } from '../utils/messageParser';
+import { ActionButtons } from '../components/ActionButtons';
 
 const formatMessage = (msg: any): Message => ({
   text: msg.message,
@@ -16,10 +17,10 @@ const formatMessage = (msg: any): Message => ({
   timestamp: new Date(msg.createdAt)
 });
 
-const Chatbot = () => {
+export const Chatbot = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { user } = useSelector((state: RootState) => state.user);
-  const { event, activationCode, eventUser } = useSelector((state: RootState) => state.activation);
+  // const { user } = useSelector((state: RootState) => state.user);
+  const { activationCode, eventUser } = useSelector((state: RootState) => state.activation);
   
   const [messages, setMessages] = useState<Array<Message>>([]);
   const [inputMessage, setInputMessage] = useState('');
@@ -70,8 +71,12 @@ const Chatbot = () => {
               sender: 'bot' as const,
               timestamp: new Date()
             };
-            setMessages([initialMessage]);
-            await createConversation(eventUserData.id, 'bot', initialMessage.text);
+            setMessages([{
+              text: initialMessage.text.content,
+              sender: 'bot',
+              timestamp: new Date()
+            }]);
+            await createConversation(eventUserData.id, 'bot', initialMessage.text.content);
           }
         } catch (error) {
           console.warn('Failed to load history, starting new conversation:', error);
@@ -104,6 +109,30 @@ const Chatbot = () => {
 
   }, [activationCode, dispatch]); // Removed messages.length from dependencies
 
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage(e);
+    }
+  };
+
+  const parseVehicleInfo = (message: string) => {
+    const parts = message.split(',').map(part => part.trim());
+    if (parts.length >= 2) {
+      const [carPlate, colorMake, state] = parts;
+      const [color, make] = colorMake.split('/').map(part => part.trim());
+      return {
+        carPlate,
+        carColor: color,
+        carMake: make,
+        carState: state
+      };
+    }
+    return null;
+  };
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputMessage.trim() || !eventUser?.id) return;
@@ -112,21 +141,24 @@ const Chatbot = () => {
     setInputMessage('');
 
     try {
-      setIsLoading(true); // Start loading
+      setIsLoading(true);
       
+      // Check if this message might be a car plate
+      const lastBotMessage = messages[messages.length - 1];
+      if (lastBotMessage?.text.includes('drop your license plate number')) {
+        const vehicleInfo = parseVehicleInfo(userMessage);
+        if (vehicleInfo) {
+          await dispatch(setUserVehicleInfo(vehicleInfo));
+          await registerCarPlate(eventUser.id, JSON.stringify(vehicleInfo));
+        }
+      }
+
       const newUserMessage = {
         text: userMessage,
         sender: 'user' as const,
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, newUserMessage]);
-
-      // Check if this message might be a car plate (after the registration prompt)
-      const lastBotMessage = messages[messages.length - 1];
-      if (lastBotMessage?.text.includes('provide your license plate number')) {
-        // This is likely a car plate response
-        await registerCarPlate(eventUser.id, userMessage);
-      }
 
       await createConversation(eventUser.id, 'user', userMessage);
 
@@ -178,20 +210,23 @@ const Chatbot = () => {
     });
   };
 
+  const handleActionClick = (message: string) => {
+    if (inputRef.current) {
+      inputRef.current.value = message;
+      setInputMessage(message);
+    }
+  };
+
+  // Add back handleSend function
+  const handleSend = (e: React.MouseEvent) => {
+    e.preventDefault();
+    handleSendMessage(e);
+  };
+
   return (
     <div className="flex flex-col h-[calc(100vh-5rem)] bg-gradient-to-b from-[#FCF9F6] to-[#f3e6d8]">
-      {/* Header */}
-      <div className="flex items-center p-4">
-        <div className="flex-1">
-          <div className="flex items-center">
-            <div className="w-2 h-2 bg-black rounded-full mr-2" />
-            <span className="font-regular">Register License Plate</span>
-          </div>
-        </div>
-      </div>
-
       {/* Chat messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 mt-5">
         {messages.map((message, index) => (
           <div
             key={index}
@@ -200,15 +235,15 @@ const Chatbot = () => {
             }`}
           >
             <div
-              className={`max-w-[80%] rounded-lg p-3 ${
+              className={`max-w-[85%] rounded-[10px] px-3 py-2 text-sm ${
                 message.sender === 'user'
-                  ? 'bg-[#e58a2f] text-white'
+                  ? 'bg-[#FDE5CD] text-black'
                   : ' text-black'
               }`}
             >
               {message.sender === 'bot' ? (
-                <div className="space-y-1">
-                  {parseMessage(message.text)}
+                <div className="space-y-2">
+                  {parseMessage(message.text, dispatch)}
                 </div>
               ) : (
                 <span className="whitespace-pre-line">
@@ -222,11 +257,14 @@ const Chatbot = () => {
         {/* Loading indicator styled like a message */}
         {isLoading && (
           <div className="flex justify-start">
-            <div className="max-w-[80%] rounded-lg p-3 bg-white">
-              <div className="flex gap-2">
-                <div className="w-2 h-2 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: '-0.32s' }} />
-                <div className="w-2 h-2 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: '-0.16s' }} />
-                <div className="w-2 h-2 bg-gray-300 rounded-full animate-bounce" />
+            <div className="max-w-[80%] rounded-lg p-3">
+              <div className="flex items-center justify-center">
+                <img 
+                  src="/copilot-logo-colored.png" 
+                  alt="Loading..." 
+                  className="w-8 h-8 animate-pulse"
+                />
+                <span className=" ml-2 text-sm animate-pulse">Generating response...</span>
               </div>
             </div>
           </div>
@@ -235,76 +273,50 @@ const Chatbot = () => {
       </div>
 
       {/* Message input */}
-      <form
-        onSubmit={handleSendMessage}
-        className="flex items-center gap-2 px-4 py-2 bg-[#F5EFE9] rounded-[24px] border border-white mb-4 mx-2 shadow-lg"
-      >
-        <img 
-          src="/copilot-logo-colored.png" 
-          alt="Copilot Logo" 
-          className="w-8 h-8 object-contain"
-        />
-        <input
-          type="text"
-          value={inputMessage}
-          onChange={(e) => setInputMessage(e.target.value)}
-          placeholder="Message Copilot"
-          className="flex-1 p-2 px-4 rounded-[18px] focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-inner"
-        />
-        <button
-          type="submit"
-          className="p-2 rounded-full"
+      <div className=" p-4">
+        <ActionButtons onActionClick={handleActionClick} agentMessage={messages[messages.length - 1]?.text} />
+        <form
+          onSubmit={handleSendMessage}
+          className="flex items-center gap-2 px-4 py-2 bg-[#F5EFE9] rounded-[24px] border border-white shadow-lg"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            stroke="currentColor"
-            className="w-6 h-6"
+          <img 
+            src="/copilot-logo-colored.png" 
+            alt="Copilot Logo" 
+            className="w-8 h-8 object-contain"
+          />
+          <input
+            ref={inputRef}
+            type="text"
+            value={inputMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
+            placeholder="Message Copilot"
+            className="flex-1 p-2 px-4 rounded-[18px] focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-inner"
+            onKeyDown={handleKeyDown}
+          />
+          <button
+            type="submit"
+            className="p-2 rounded-full"
+            onClick={handleSend}
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"
-            />
-          </svg>
-        </button>
-      </form>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+              className="w-6 h-6"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"
+              />
+            </svg>
+          </button>
+        </form>
+      </div>
     </div>
   );
 };
 
 export default Chatbot;
-
-// Add these styles to your existing CSS
-const styles = `
-  .typing-indicator {
-    display: flex;
-    gap: 4px;
-    padding: 12px;
-    background: #f0f0f0;
-    border-radius: 20px;
-    width: fit-content;
-  }
-
-  .dot {
-    width: 8px;
-    height: 8px;
-    background: #666;
-    border-radius: 50%;
-    animation: bounce 1.4s infinite ease-in-out;
-  }
-
-  .dot:nth-child(1) { animation-delay: -0.32s; }
-  .dot:nth-child(2) { animation-delay: -0.16s; }
-
-  @keyframes bounce {
-    0%, 80%, 100% { 
-      transform: scale(0);
-    } 
-    40% { 
-      transform: scale(1.0);
-    }
-  }
-`;

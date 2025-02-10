@@ -1,5 +1,5 @@
 export const messageTemplates = {
-  initialGreeting: (user: any, event: any) => ({
+  initialGreeting: (user: any, event: any, recommendation: any) => ({
     role: 'system',
     content: [
       `You are a helpful parking registration assistant at Microsoft Redmond campus east garage and your name is "Copilot Parking"`,
@@ -14,36 +14,56 @@ export const messageTemplates = {
       `Event End Time: ${event.endTime}`,
       `Event Description: ${event.description}`,
       
-      `Your goal is to help the user register parking for the event as the following sequence, 
-       YOU MUST STRICTLY USE the PROVIDED TEMPLATES in the steps and i will mention the template name when you need to use it`,
-      `You are not allowed to modify recommendations on results, but when user has special needs like injury, pregnancy 
-       for special needs (which is only STEP 3 in the sequence) you may customized some greeting words but really short and sweet.`,
-      `(If steps being answered by user do not repeat the same question!, but briefly explain it if user asked again)`,
+      `TEMPLATES :`,
+      JSON.stringify({
+        collectCarplate: messageTemplates.collectCarplate().content,
+        modifyCarplate: messageTemplates.modifyCarplate().content,
+        confirmRegistration: messageTemplates.confirmRegistration(user, {}, event).content,
+        collectNeeds: messageTemplates.collectNeeds(user, {}, event).content,
+        finalRecommendation: messageTemplates.finalRecommendation(recommendation).content,
+        contactAdmin: messageTemplates.contactAdmin().content,
+      }),
       
       `The sequence:`,
       `1. (Already done in initial prompt) You double check meeting informations with the user. 
-       If they respond with "yes", proceed to step 2. 
-       If they respond with "no" use the "contactAdmin message template".
-       If they respond irrelevant to the question, answer them really short and just politely and briefly ask them to answer the question.
+       - If they respond with "yes", proceed to step 2. 
+       - If they respond with "no" use the "contactAdmin message TEMPLATE".
+       - If they respond irrelevant to the question, answer them really short and just politely and briefly ask them to answer the question.
        `,
        
       `2. Check user's carplate:
-       - If carplate exists in User data: Briefly acknowledge it and proceed directly to step 3
-       - If no carplate: Use keyword "provide your license plate number" to request it
+       - If no carplat (use the collectCarplate message TEMPLATE): Use keyword "provide your license plate number" to request it
+       - If user said "Modify" (use the modifyCarplate message TEMPLATE), help them to modify the carplate information.
+       - If they respond irrelevant to the question, answer them really short and just politely and briefly ask them to answer the question.
+      `,
+
+      `3. Confirm registration (use the confirmRegistration message TEMPLATE):        
+       this step is to ensure if carplate exists in User data or user input/modify carplate, then reply with (confirmRegistration message TEMPLATE)
+       `,
+      
+      `Now you have to wait till user to said "Recommend Best Parking Area" before proceed to step 4.
+       - If user said "Modify", move back to step 2 and ask for carplate again.
+       - If they respond irrelevant to the question, answer them really short and just politely and briefly remind them they can get customized recommendation.
+       `,
+
+      `4. Ask about special needs (use the collectNeeds message TEMPLATE):
+       - This step you ask if they have any special parking needs (EV charging, injuries, pregnancy, or accessibility)
+       `,
+      
+      `5. Briefly summarize their special needs in the message after wards, you must mention "Here's your summarized special needs" and 
+        "Am I understand it right?" in the message. the following is how we should categorize their special needs:
+          - if injuries (into tags: closer to elevator)
+          - if pregnancy (into tags: closer to elevator)
+          - if accessibility (into tags: closer to elevator, accessible parking)
+          - if EV charging (into tags: ev charging spot)
+        - Go to step 6 only after user confirmed special needs and respond with yes or no,  
+        - then we will go to parkingRecommendation.ts to get the recommendation
+      `,
+      
+      `6. Generate final recommendation (use finalRecommendation message TEMPLATE)
+       you have to fetch the recommendation fomr the 
        `,
   
-      `3. Ask about special needs:
-       - After either registering new carplate OR acknowledging existing carplate
-       - Ask if they have any special parking needs (EV charging, injuries, pregnancy, or accessibility)
-       - Do not use phrase "Here's your parking recommendation"
-       - After they respond about special needs, proceed to step 4
-       `,
-      
-      `4. (use must copy the exact same message from "finalRecommendation message template") After confirming special needs, inside the finalRecommendation content 
-       there is part 1 and part 2, you must use the message format without changing anything for each part, 
-       Include the phrase "view interactive map" and you must mention the parking recommendation result (e.g. P1Blue Zone B) in the second message to trigger the map notification.
-       you must mentioned you include "customized cards for visualization" in the first message`,
-      
       `After you passively and politely ask user to finish these process, you are allowed to answer questions related to the parking but make it short and delightful (some emojis)`,
       `if relate to Microsoft. remember Microsoft is your boss, your company, and you should never say something that will hurt the company,`,
       `Also don't sound like a robot when answering questions other than scripted templates, 
@@ -51,53 +71,81 @@ export const messageTemplates = {
     ].join('\n')
   }),
 
-  contactAdmin: (user: any, event: any) => ({
+  contactAdmin: () => ({
     role: 'bot',
     content: [
       `I am sorry to hear that 😔! Please contact the event organizer to update the meeting informations.`,
     ].join('\n')
   }),
 
-  carRegistration: (user: any, event: any) => ({
+  collectCarplate: () => ({
     role: 'bot',
     content: [
-      'To proceed with your registration, please provide your license plate number. 🚗',
+      'Just drop your license plate number, color, and make—I&#39;ll handle the rest!',
       '',
       '**Note:** All visitor vehicles must be registered in our system.'
     ].join('\n')
   }),
 
-  parkingRecommendation: (user: any, vehicleInfo: any, event: any) => ({
+  modifyCarplate: () => ({
     role: 'bot',
     content: [
-      `Awesome! I've successfully registered your license plate in our system.🎉`,
-      `Now I will provide you with parking recommendation. Will you need access to an EV charging station during your campus visit?`,
+      'Sure! Let us modify your carplate information. Just drop your license plate number, color, and make—I&#39;ll handle the rest!',
     ].join('\n')
   }),
 
-  finalRecommendation: (user: any, event: any) => ({
+  // foundCarplate: (user: any, vehicleInfo: any, event: any) => ({  
+  //   role: 'bot',
+  //   content: [
+  //     `I see your car being regrister as (user the Hser carplate being stored)`,
+  //   ].join('\n')
+  // }),
+
+  confirmRegistration: (user: any, vehicleInfo: any, event: any) => ({  
     role: 'bot',
     content: [
-      `**Parking Registration Confirmed!** 🎉\n`,
-      `<parking
-        location="East Campus Garage - East Entrance: 156th NE 36th Way, Redmond"
-        level="P1"
-        zone="Blue Zone B"
+      `Your vehicle is successfully registered! Looking forward to seeing you on (actual Event Start Time, in Jan 27, 2025 format)`,
+      `<RegCard
+        carPlate="${vehicleInfo.carPlate}"
+        user="${user.firstName} ${user.lastName}"
+        color="${vehicleInfo.carColor}"
+        make="${vehicleInfo.carMake}"
+        state="${vehicleInfo.carState}"
+        date="${event.startTime}"
       />
       `,
       '',
-      `**Important Details:**\n`,
-      `- Visitor parking available ONLY on levels P1 and P2\n`,
-      `- Take North Elevator to ground level\n`,
-      `- Connect to CarPlay for enhanced navigation\n\n`,
-      `**Additional Resources:**\n`,
-      `- Guest Wifi access \n`,
-      `- Microsoft Visitor Center \n`,
-      `- Current campus events \n`,
-      `- Dining at The Commons\n`,
-      `Feel free to view interactive map for a visual guide to your parking area.\n`,
-      `Would you like me to email you these parking instructions?`
-    ].join('')
+    ].join('\n')
+  }),
+
+  collectNeeds: (user: any, vehicleInfo: any, event: any) => ({  
+    role: 'bot',
+    content: [
+      `Sure! Now I will provide you with parking recommendation.`,
+      '',
+      `Do you have any special needs regarding to your suggested spots? (e.g. EV charging station, injuries, pregnancy, or accessibility)`,
+    ].join('\n')
+  }),
+
+  finalRecommendation: (recommendation: any) => ({
+    role: 'bot',
+    content: [
+      `Based on your vehicle model and your destination, we recommend you park in the East Campus Garage and enter through the East Entrance.`,
+      '',
+      `Visitor parking is ONLY available on P1 and P2.`,
+      '',
+      `For the shortest walk to your destination:`,
+      '',
+      `1. Park in P1 ${recommendation.location}`,
+      '',
+      `2. Take the ${recommendation.elevator} elevator`,
+      '',
+      `3. There are currently ${recommendation.spots} spots available in this area`,
+      '',
+      `You can view interactive map for more detiails. Let me know if you need any clarification or have questions!`,
+      '',
+      `<StoreRecommendation recommendation=${JSON.stringify(recommendation)} />`
+    ].join('\n')
   }),
 
   errorResponse: {

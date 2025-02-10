@@ -67,4 +67,16 @@ export const registerCarPlate = async (eventUserId: string, carPlate: string) =>
     carPlate,
   });
   return response.data;
-}; 
+};
+
+// export const getParkingRecommendation = async (specialNeeds: any) => {
+//   try {
+//     const response = await api.post('/api/parking/recommendation', {
+//       specialNeeds
+//     });
+//     return response.data;
+//   } catch (error) {
+//     console.error('Error details:', error);
+//     throw error;
+//   }
+// }; 
