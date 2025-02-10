@@ -3,7 +3,7 @@ import { ParkingCard } from '../components/ParkingCard';
 import { RegCard } from '../components/RegCard';
 import { InfoCard } from '../components/InfoCard';
 import { MeetingCard } from '../components/MeetingCard';
-import { setRecommendation } from '../store/parkingSlice';
+import { setParkingRecommendation } from '../store/parkingSlice';
 import { AnyAction, Dispatch } from '@reduxjs/toolkit';
 import { store } from '../store/store';
 import { setUser } from '../store/userSlice';
@@ -171,13 +171,14 @@ export const parseMessage = (text: string, dispatch: Dispatch<AnyAction>): React
             location: parkingLot,
             color: color,
             zone: zone,
-            availableSpots: spots,
-            directions: text
+            spots: spots,
+            elevator: 'Main',
+            showMapNotification: true,
         };
 
         // Wrap the dispatch in a try-catch to debug any potential issues
         try {
-            dispatch(setRecommendation(recommendation));
+            dispatch(setParkingRecommendation(recommendation));
         } catch (error) {
             console.error('Error dispatching recommendation:', error);
         }

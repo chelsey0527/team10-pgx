@@ -5,7 +5,7 @@ import activationRoutes from './routes/activationRoutes';
 import conversationRoutes from './routes/conversationRoutes';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
-
+import parkingRoutes from './routes/parkingRoutes';
 const app = express();
 
 // Move dotenv config to the top, before any other code
@@ -66,6 +66,8 @@ app.use('/api', (req, res, next) => {
   console.log('Hitting activation routes middleware');
   next();
 }, activationRoutes);
+
+// app.use('/api/parking', parkingRoutes);
 
 // Add catch-all route for debugging
 app.use('*', (req, res) => {

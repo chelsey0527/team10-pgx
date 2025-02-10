@@ -1,30 +1,32 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { persistStore, persistReducer } from 'redux-persist';
-import storage from 'redux-persist/lib/storage';
+import storage from 'redux-persist/lib/storage'; // defaults to localStorage
 import userReducer from './userSlice';
 import activationReducer from './activationSlice';
 import navigationReducer from './navigationSlice';
 import parkingReducer from './parkingSlice';
+import { combineReducers } from '@reduxjs/toolkit';
 
 const persistConfig = {
   key: 'root',
   storage,
-  whitelist: ['user', 'parking'], // Persist these reducers
-  debug: true, // Add this to see persist logs
+  whitelist: ['user', 'parking']
 };
 
-const persistedUserReducer = persistReducer(persistConfig, userReducer);
+const rootReducer = combineReducers({
+  user: userReducer,
+  activation: activationReducer,
+  navigation: navigationReducer,
+  parking: parkingReducer,
+});
+
+const persistedReducer = persistReducer(persistConfig, rootReducer);
 
 export const store = configureStore({
-  reducer: {
-    user: persistedUserReducer,
-    activation: activationReducer,
-    navigation: navigationReducer,
-    parking: parkingReducer,
-  },
+  reducer: persistedReducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
-      serializableCheck: false, // Needed for redux-persist
+      serializableCheck: false,
     }),
 });
 

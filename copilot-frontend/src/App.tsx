@@ -1,10 +1,10 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import { Provider } from 'react-redux';
+import { store } from './store/store';
 import Registration from "./pages/Registration";
 import Chatbot from "./pages/Chatbot";
 import Map from "./pages/Map";
-import { Provider } from 'react-redux';
-import { store } from './store/store';
 import Navigation from './components/Navigation';
 
 // Create a wrapper component to use useLocation
@@ -27,9 +27,9 @@ const AppContent = () => {
 const App = () => {
   return (
     <Provider store={store}>
-      <Router>
-        <AppContent />
-      </Router>
+        <Router>
+          <AppContent />
+        </Router>
     </Provider>
   );
 };

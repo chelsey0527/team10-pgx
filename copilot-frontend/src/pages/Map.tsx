@@ -1,29 +1,56 @@
-import React, { useState, useRef } from 'react';
-import { useSelector } from 'react-redux';
+import React, { useState, useRef, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import mapDemo from '../assets/map-demo.png';
 import generalBlueB1 from '../assets/general-blue-b-1.png';
 import evOrangeB1 from '../assets/ev-orange-b-1.png';
+import { setParkingRecommendation } from '../store/parkingSlice';
+import { RootState } from '../store/store';
+import Draggable from 'react-draggable';
+import { mapConfigs } from '../config/mapConfigs';
+import MapMarker from '../components/MapMarker';
+// import { getParkingRecommendation } from '../services/api';
+
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3001';
+const GROQ_API_KEY = process.env.REACT_APP_API_KEY;
 
 const Map = () => {
+  const dispatch = useDispatch();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isImageLoading, setIsImageLoading] = useState(true);
   
   // Convert state to refs for values that don't need re-renders
   // const lastUpdateTimeRef = useRef(0);
-  const parkingSpotsRef = useRef({ p1: 16, p2: 5 });
+  const parkingSpotsRef = useRef({ p1: 36, p2: 23 });
 
-  // Update the selector to use optional chaining and provide a default value
-  const userNeeds = useSelector((state: any) => 
+  // Update the selector to use typed state
+  const userNeeds = useSelector((state: RootState) => 
     state.user?.user?.specialNeeds ?? {
       needsEV: false,
       needsAccessible: false,
       needsCloserToElevator: false
     }
   );
-  const recommendedParking = useSelector((state: any) => state.parking?.recommendation);
+  const recommendedParking = useSelector((state: RootState) => state.parking?.recommendation);
   
   console.log('userNeeds:', userNeeds);
   console.log('Recommended parking from Redux:', recommendedParking);
+
+  // Add effect to fetch recommendation on mount
+  // useEffect(() => {
+  //   const fetchRecommendation = async () => {
+  //     try {
+  //       const data = await getParkingRecommendation(userNeeds);
+  //       dispatch(setParkingRecommendation(data));
+  //     } catch (error) {
+  //       console.error('Error fetching parking recommendation:', error);
+  //     }
+  //   };
+
+  //   // Only fetch if we have user needs
+  //   if (userNeeds) {
+  //     fetchRecommendation();
+  //   }
+  // }, [userNeeds, dispatch]);
 
   // Function to determine which map to show
   const getMapImage = () => {
@@ -92,15 +119,48 @@ const Map = () => {
 
   };
 
+  // Add state for tracking drag bounds
+  const [dragBounds, setDragBounds] = useState({ left: 0, top: 0, right: 0, bottom: 0 });
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+
+  // Add effect to calculate drag bounds
+  useEffect(() => {
+    if (mapContainerRef.current) {
+      const container = mapContainerRef.current;
+      const containerRect = container.getBoundingClientRect();
+      const bounds = {
+        left: containerRect.width - containerRect.width * 2.5,
+        top: containerRect.height - containerRect.height * 2.5,
+        right: 0,
+        bottom: 0
+      };
+      setDragBounds(bounds);
+    }
+  }, []);
+
+  // Function to get current map config
+  const getCurrentMapConfig = () => {
+    if (!recommendedParking) return mapConfigs['general-blue-b1'];
+    
+    const color = recommendedParking.color?.toLowerCase() || '';
+    const zone = recommendedParking.zone?.toLowerCase() || '';
+    
+    if (userNeeds?.needsEV && color === 'orange' && zone === 'b') {
+      return mapConfigs['ev-orange-b1'];
+    }
+    
+    return mapConfigs['general-blue-b1'];
+  };
+
   return (
-    <div className="flex flex-col h-[calc(100vh-5rem)] bg-gradient-to-b from-[#FCF9F6] to-[#f3e6d8] px-8 py-14">
-      <span className="text-2xl mb-4 font-bold">Visitor Parking Spots Available </span>
-      <span className="text-lg text-gray-500 mb-6">
+    <div className="flex flex-col h-[calc(100vh-5rem)] bg-gradient-to-b from-[#FCF9F6] to-[#f3e6d8] py-14">
+      <span className="text-lg mb-4 font-bold px-8">Visitor Parking Spots Available </span>
+      <span className="text-sm text-gray-500 mb-6 px-8">
         Last update: {'30 secs'} ago
       </span>
       
       {/* Parking spot counters */}
-      <div className="flex gap-4 mb-8">
+      <div className="flex gap-4 mb-8 px-8">
         <div className="flex-1 max-w-[200px] bg-white rounded-xl p-4 shadow-md">
           <div className="flex items-center gap-3">
             <div className="text-[#BE8544] text-lg">P1</div>
@@ -117,14 +177,23 @@ const Map = () => {
       </div>
       
       {/* Main map container with flex centering */}
-      <div className="flex-1 flex items-center justify-center">
-        <div className="cursor-pointer" onClick={handleImageClick}>
-          <img 
-            src={getMapImage()}
-            alt="Parking Map" 
-            className="max-w-full h-auto"
-          />
-        </div>
+      <div className="flex-1 flex items-start justify-center overflow-hidden relative" ref={mapContainerRef}>
+        <Draggable
+          bounds={dragBounds}
+          defaultPosition={{x: 0, y: 0}}
+        >
+          <div className="cursor-move relative" onClick={handleImageClick}>
+            <img 
+              src={getMapImage()}
+              alt="Parking Map" 
+              className="max-w-[250%] h-auto"
+              draggable={false}
+            />
+            {getCurrentMapConfig().markers.map(marker => (
+              <MapMarker key={marker.id} marker={marker} />
+            ))}
+          </div>
+        </Draggable>
       </div>
 
       {/* Modal popup */}
@@ -142,13 +211,21 @@ const Map = () => {
                 <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-white"></div>
               </div>
             )}
-            <img 
-              src={getDetailedMapImage()}
-              alt="Detailed Parking Map" 
-              className="max-h-[90vh] max-w-[90vw]"
-              onLoad={handleImageLoad}
-              style={{ opacity: isImageLoading ? '0' : '1' }}
-            />
+            <Draggable bounds="parent" defaultPosition={{x: 0, y: 0}}>
+              <div className="relative">
+                <img 
+                  src={getDetailedMapImage()}
+                  alt="Detailed Parking Map" 
+                  className="max-h-[90vh] max-w-[90vw] cursor-move"
+                  onLoad={handleImageLoad}
+                  style={{ opacity: isImageLoading ? '0' : '1' }}
+                  draggable={false}
+                />
+                {getCurrentMapConfig().markers.map(marker => (
+                  <MapMarker key={marker.id} marker={marker} />
+                ))}
+              </div>
+            </Draggable>
           </div>
         </div>
       )}
