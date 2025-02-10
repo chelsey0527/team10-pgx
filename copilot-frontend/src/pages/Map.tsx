@@ -35,22 +35,10 @@ const Map = () => {
   console.log('userNeeds:', userNeeds);
   console.log('Recommended parking from Redux:', recommendedParking);
 
-  // Add effect to fetch recommendation on mount
-  // useEffect(() => {
-  //   const fetchRecommendation = async () => {
-  //     try {
-  //       const data = await getParkingRecommendation(userNeeds);
-  //       dispatch(setParkingRecommendation(data));
-  //     } catch (error) {
-  //       console.error('Error fetching parking recommendation:', error);
-  //     }
-  //   };
-
-  //   // Only fetch if we have user needs
-  //   if (userNeeds) {
-  //     fetchRecommendation();
-  //   }
-  // }, [userNeeds, dispatch]);
+  // Add useEffect to log user needs when component mounts or userNeeds changes
+  useEffect(() => {
+    console.log('Map component - userNeeds changed:', userNeeds);
+  }, [userNeeds]);
 
   // Function to determine which map to show
   const getMapImage = () => {
@@ -88,23 +76,6 @@ const Map = () => {
     return generalBlueB1;
   };
 
-  // useEffect(() => {
-  //   // Update every 30 seconds
-  //   const interval = setInterval(() => {
-  //     lastUpdateTimeRef.current = 0;
-  //     // Randomly adjust parking spots within reasonable bounds
-  //     parkingSpotsRef.current = {
-  //       p1: Math.max(0, Math.min(20, parkingSpotsRef.current.p1 + Math.floor(Math.random() * 3) - 1)),
-  //       p2: Math.max(0, Math.min(10, parkingSpotsRef.current.p2 + Math.floor(Math.random() * 3) - 1))
-  //     };
-  //     forceUpdate({}); // Force a re-render to update the display
-  //   }, 5000);
-
-
-  //   return () => {
-  //     clearInterval(interval);
-  //   };
-  // }, []);
 
   const handleImageClick = () => {
     setIsModalOpen(true);
@@ -153,7 +124,7 @@ const Map = () => {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-5rem)] bg-gradient-to-b from-[#FCF9F6] to-[#f3e6d8] py-14">
+    <div className="flex flex-col h-[calc(100vh-5rem)] bg-gradient-to-b from-[#FCF9F6] to-[#f3e6d8] pt-10 pb-2">
       <span className="text-lg mb-4 font-bold px-8">Visitor Parking Spots Available </span>
       <span className="text-sm text-gray-500 mb-6 px-8">
         Last update: {'30 secs'} ago
@@ -181,12 +152,14 @@ const Map = () => {
         <Draggable
           bounds={dragBounds}
           defaultPosition={{x: 0, y: 0}}
+          cancel=".clickable"
+          axis="x"
         >
-          <div className="cursor-move relative" onClick={handleImageClick}>
+          <div className="cursor-move relative">
             <img 
               src={getMapImage()}
               alt="Parking Map" 
-              className="max-w-[250%] h-auto"
+              className="max-w-[240%] h-auto"
               draggable={false}
             />
             {getCurrentMapConfig().markers.map(marker => (
