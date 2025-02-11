@@ -17,7 +17,7 @@ export const getUserByActivationCode = async (activationCode: string) => {
 };
 
 export const verifyActivationCode = async (code: string) => {
-  const response = await api.get(`/api/users/activation/${code}`);
+  const response = await api.get(`/api/${code}`);
   return response.data;
 };
 

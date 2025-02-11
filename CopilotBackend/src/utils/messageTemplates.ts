@@ -132,19 +132,16 @@ export const messageTemplates = {
     content: [
       `Based on your vehicle model and your destination, we recommend you park in the East Campus Garage and enter through the East Entrance.`,
       '',
-      `Visitor parking is ONLY available on P1 and P2.`,
+      `**Visitor parking is ONLY available on P1 and P2.**`,
       '',
       `For the shortest walk to your destination:`,
       '',
       `1. Park in P1 ${recommendation.location}`,
-      '',
       `2. Take the ${recommendation.elevator} elevator`,
-      '',
       `3. There are currently ${recommendation.spots} spots available in this area`,
       '',
       `You can view interactive map for more detiails. Let me know if you need any clarification or have questions!`,
       '',
-      `<StoreRecommendation recommendation=${JSON.stringify(recommendation)} />`
     ].join('\n')
   }),
 
