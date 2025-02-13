@@ -47,7 +47,7 @@ const Map = () => {
 
     // Match the format: "{color}-{zone}-{level}.png"
     console.log(userNeeds?.needsEV, color, zone)
-    if (userNeeds?.needsEV && color === 'orange' && zone === 'b' ) {
+    if (color === 'orange' && zone === 'b') {
       return evOrangeB1;
     }
 
@@ -65,7 +65,7 @@ const Map = () => {
     const zone = recommendedParking.zone?.toLowerCase() || '';
 
     // Match the format: "{color}-{zone}-{level}.png"
-    if (userNeeds?.needsEV && color === 'orange' && zone === 'b') {
+    if (color === 'orange' && zone === 'b') {
       return evOrangeB1;
     }
 
@@ -112,7 +112,7 @@ const Map = () => {
     const color = recommendedParking.color?.toLowerCase() || '';
     const zone = recommendedParking.zone?.toLowerCase() || '';
     
-    if (userNeeds?.needsEV && color === 'orange' && zone === 'b') {
+    if (color === 'orange' && zone === 'b') {
       return mapConfigs['ev-orange-b1'];
     }
     
