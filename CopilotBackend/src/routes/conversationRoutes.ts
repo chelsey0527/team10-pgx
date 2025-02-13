@@ -87,14 +87,8 @@ router.post('/smart-response', async (req, res) => {
       where: { eventUserId },
       orderBy: { createdAt: 'desc' },
       take: 5,
-    });
-
-    // Get the last bot message
-    const lastBotMessage = conversationHistory
-      .find(msg => msg.sender === 'bot');
-
-    console.log('Current message:', message);
-    console.log('Last bot message:', lastBotMessage);
+    }).then(messages => messages.reverse()); // Reverse to maintain chronological order
+    
 
     const specialNeeds = {
       needsEV: false,
@@ -102,43 +96,73 @@ router.post('/smart-response', async (req, res) => {
       needsCloserToElevator: false
     };
 
-    // Convert messages to lowercase for easier checking
+    // Convert current message to lowercase for easier checking
     const currentMessageLower = message.toLowerCase();
-    const lastBotMessageLower = lastBotMessage?.message.toLowerCase() || '';
 
-    // Check conditions to set EV flag
-    if (
-      // If user explicitly mentions EV needs
+    // Check if any of the last 5 messages contains the trigger phrase
+    const hasSpecialNeedsSummary = conversationHistory.some((msg, index) => {
+      if (msg.sender === 'bot' && 
+          msg.message.toLowerCase().includes("here's your summarized special needs:")) {
+        // Check if there's a "yes" response in the next message
+        const nextMsg = conversationHistory[index + 1];
+        return !(nextMsg && nextMsg.sender === 'user' && 
+                 nextMsg.message.toLowerCase() === 'yes');
+      }
+      return false;
+    });
+
+    // Check for EV needs in current message
+    const hasEVKeywords = 
       currentMessageLower.includes('ev') ||
+      currentMessageLower.includes('electric vehicle') ||
       currentMessageLower.includes('ev charging') ||
-      currentMessageLower.includes('ev charging station') ||
-      currentMessageLower.includes('i drive ev') ||
-      // Or if they're modifying in response to EV question
-      (currentMessageLower.includes('modify') && 
-       lastBotMessageLower.includes('need an ev charging spot'))
-    ) {
+      currentMessageLower.includes('charging station') ||
+      currentMessageLower.includes('i drive ev');
+
+    // Set EV flag if keywords are found
+    if (hasEVKeywords) {
       specialNeeds.needsEV = true;
     }
 
-    // Check conditions to unset EV flag
+    // Check for accessibility needs
     if (
-      currentMessageLower.includes("don't drive ev") || 
+      currentMessageLower.includes('wheelchair') ||
+      currentMessageLower.includes('disabled') ||
+      currentMessageLower.includes('accessibility')
+    ) {
+      specialNeeds.needsAccessible = true;
+    }
+
+    // Check for elevator proximity needs
+    if (
+      currentMessageLower.includes('elevator') ||
+      currentMessageLower.includes('close to entrance')
+    ) {
+      specialNeeds.needsCloserToElevator = true;
+    }
+
+    // Unset special needs if user indicates no requirements
+    if (
+      currentMessageLower.includes("don't need") || 
       currentMessageLower.includes("no needs") ||
-      lastBotMessageLower.includes("don't have any specific requirements")
+      currentMessageLower.includes("no special requirements")
     ) {
       specialNeeds.needsEV = false;
+      specialNeeds.needsAccessible = false;
+      specialNeeds.needsCloserToElevator = false;
     }
-    
-    console.log('------------------------------------------ 0. lastBotMessageLower', lastBotMessageLower);
-    console.log('0. specialNeeds', specialNeeds);
-    
+
+    console.log('------------------------------------------');
+    console.log(hasSpecialNeedsSummary, hasEVKeywords, specialNeeds.needsAccessible, specialNeeds.needsCloserToElevator);
+    console.log('------------------------------------------');
     let parkingRecommendation;
-    if (lastBotMessageLower.includes("here's your summarized special needs:")) {
+    // Get recommendation if we're in special needs context or user mentioned specific needs
+    if (hasSpecialNeedsSummary || hasEVKeywords || specialNeeds.needsAccessible || specialNeeds.needsCloserToElevator) {
       parkingRecommendation = await getParkingRecommendation(
         event.meetingBuilding,
         specialNeeds
       );
-      console.log('------------------------------------------ 1. recommendation', parkingRecommendation);
+      console.log('Parking recommendation triggered:', parkingRecommendation);
     }
 
     const messages = [
@@ -149,6 +173,8 @@ router.post('/smart-response', async (req, res) => {
       })),
       { role: 'user', content: message }
     ];
+
+    console.log('********************************* 1. messages', messages);
 
     const response = await axios.post(API_URL, {
       messages,
@@ -163,7 +189,8 @@ router.post('/smart-response', async (req, res) => {
       }
     });
 
-    console.log('------------------------------------------ 2. response', response.data.choices[0]?.message?.content);
+
+    console.log('********************************* 2. response', response.data.choices[0]?.message?.content);
 
     const aiMessage = response.data.choices[0]?.message?.content || '';
     

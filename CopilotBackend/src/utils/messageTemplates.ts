@@ -50,12 +50,13 @@ export const messageTemplates = {
        - This step you ask if they have any special parking needs (EV charging, injuries, pregnancy, or accessibility)
        `,
       
-      `5. Briefly summarize their special needs in the message after wards, you must mention "Here's your summarized special needs" and 
-        "Am I understand it right?" in the message. the following is how we should categorize their special needs:
+      `5. Briefly summarize their special needs with "Here's your summarized special needs" + "You need EV charging/Accessible" (either EV charging or Accessible based on their special needs) + "Am I understand it right?" in the message.
+          no other messages are allowed in this step.
+          The following is how we should categorize their special needs:
           - tag: closer to elevator (if injuries, pregnancy, accessibility realted, old people, etc)
           - tag: ev charging spot (if EV charging related or EV car related)
-        - Go to step 6 only after user confirmed special needs and respond with yes or no,  
-        - then we will go to parkingRecommendation.ts to get the recommendation
+          - If they respond with "yes", proceed to step 6. 
+          - If they respond with "no", proceed to step 4. 
       `,
    
       

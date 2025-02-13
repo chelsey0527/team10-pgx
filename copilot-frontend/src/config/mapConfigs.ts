@@ -27,14 +27,14 @@ export const mapConfigs: Record<string, MapConfig> = {
     markers: [
       {
         id: 'entrance-1',
-        x: 79,
-        y: 56,
+        x: 58,
+        y: 26,
         type: 'entrance',
-        tooltip: 'West Entrance'
+        tooltip: '159th Entrance'
       },
       {
         id: 'parking-1',
-        x: 48,
+        x: 140,
         y: 52,
         type: 'parking',
         tooltip: 'Parking Area',
