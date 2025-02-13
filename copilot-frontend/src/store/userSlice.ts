@@ -11,18 +11,18 @@ interface User {
   carColor?: string;
   carMake?: string;
   carState?: string;
-  specialNeeds?: {
-    needsEV?: boolean;
-    needsAccessible?: boolean;
-    needsCloserToElevator?: boolean;
+  specialNeeds: {
+    needsEV: boolean;
+    needsAccessible: boolean;
+    needsCloserToElevator: boolean;
   };
   // ... other fields
 }
 
 interface SpecialNeeds {
-  needsEV?: boolean;
-  needsAccessible?: boolean;
-  needsCloserToElevator?: boolean;
+  needsEV: boolean;
+  needsAccessible: boolean;
+  needsCloserToElevator: boolean;
 }
 
 interface UserState {
@@ -33,7 +33,17 @@ interface UserState {
 }
 
 const initialState: UserState = {
-  user: null,
+  user: {
+    id: '',
+    email: '',
+    firstName: '',
+    lastName: '',
+    specialNeeds: {
+      needsEV: false,
+      needsAccessible: false,
+      needsCloserToElevator: false
+    }
+  } as User,
   loading: false,
   error: null,
   isAuthenticated: false
@@ -99,6 +109,21 @@ export const setUserVehicleInfo = createAsyncThunk(
     } catch (error) {
       throw error;
     }
+  }
+);
+
+export const setUserAsync = createAsyncThunk(
+  'user/setUser',
+  async (userData: Partial<User>) => {
+    return {
+      ...userData,
+      specialNeeds: {
+        needsEV: false,
+        needsAccessible: false,
+        needsCloserToElevator: false,
+        ...userData.specialNeeds
+      }
+    };
   }
 );
 

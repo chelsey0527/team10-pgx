@@ -36,11 +36,6 @@ const Map = () => {
   console.log('userNeeds:', userNeeds);
   console.log('Recommended parking from Redux:', recommendedParking);
 
-  // Add useEffect to log user needs when component mounts or userNeeds changes
-  useEffect(() => {
-    console.log('Map component - userNeeds changed:', userNeeds);
-  }, [userNeeds]);
-
   // Function to determine which map to show
   const getMapImage = () => {
     if (!recommendedParking) return mapDemo;
@@ -131,6 +126,9 @@ const Map = () => {
     setSelectedLevel(level);
     // Here you can add logic to change the map view based on level
   };
+
+  // Modify existing console.log
+  console.log('Map component mounted:', recommendedParking);
 
   return (
     <div className="flex flex-col h-[calc(100vh-5rem)] bg-white pt-10 pb-2">

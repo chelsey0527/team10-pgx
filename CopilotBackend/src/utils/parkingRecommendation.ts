@@ -28,18 +28,25 @@ export async function getParkingRecommendation(
   buildingNumber: string,
   specialNeeds: SpecialNeeds
 ): Promise<ParkingRecommendation> {
-  // First, find garages that serve this building and match special needs
+  // Ensure boolean values
+  const sanitizedNeeds = {
+    needsEV: Boolean(specialNeeds.needsEV),
+    needsAccessible: Boolean(specialNeeds.needsAccessible),
+    needsCloserToElevator: Boolean(specialNeeds.needsCloserToElevator)
+  };
+
+  console.log('-----------------', sanitizedNeeds.needsEV, sanitizedNeeds.needsAccessible);
+
   const garages = await prisma.garage.findMany({
     where: {
       OR: [
         { elevatorBuilding1: { contains: buildingNumber } },
         { elevatorBuilding2: { contains: buildingNumber } }
       ],
-      // Filter by tag based on special needs
-      tag: specialNeeds.needsEV ? 'ev' : 
-           specialNeeds.needsAccessible ? 'accessible' : 
+      // Use sanitized values
+      tag: sanitizedNeeds.needsEV ? 'ev' : 
+           sanitizedNeeds.needsAccessible ? 'accessible' : 
            'general',
-      // Only include garages with available spots
       spots: {
         gt: 0
       }
@@ -70,7 +77,7 @@ export async function getParkingRecommendation(
     score += bestWeight * 50; // Weight proximity heavily
 
     // If user needs closer elevator access, prioritize weight even more
-    if (specialNeeds.needsCloserToElevator) {
+    if (sanitizedNeeds.needsCloserToElevator) {
       score += bestWeight * 25;
     }
 

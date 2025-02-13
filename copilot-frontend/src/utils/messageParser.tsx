@@ -7,6 +7,7 @@ import { setParkingRecommendation } from '../store/parkingSlice';
 import { AnyAction, Dispatch } from '@reduxjs/toolkit';
 import { store } from '../store/store';
 import { setUser, updateSpecialNeeds } from '../store/userSlice';
+import axios from 'axios';
 
 export const parseMessage = (text: string, dispatch: Dispatch<AnyAction>): React.JSX.Element[] => {
   const parts: React.JSX.Element[] = [];
@@ -158,62 +159,36 @@ export const parseMessage = (text: string, dispatch: Dispatch<AnyAction>): React
   addCurrentText();
 
   if (text.includes('For the shortest walk to your destination')) {
-    const locationMatch = text.match(/Park in (P\d+) (\w+) Zone (\w+)/i);
-    
-    if (locationMatch) {
-        const [_, parkingLot, color, zone] = locationMatch;
-        
-        // Extract available spots
-        const spotsMatch = text.match(/(\d+) spots? available/i);
-        const spots = spotsMatch ? parseInt(spotsMatch[1]) : 0;
+    const currentState = store.getState();
+    const userSpecialNeeds = currentState.user.user?.specialNeeds || {
+      needsEV: false,
+      needsAccessible: false,
+      needsCloserToElevator: false
+    };
 
-        const recommendation = {
-            location: parkingLot,
-            color: color,
-            zone: zone,
-            spots: spots,
-            elevator: 'Main',
-            showMapNotification: true,
-        };
+    // Get building number from text
+    const buildingMatch = text.match(/Building (\d+)/i);
+    const buildingNumber = buildingMatch ? buildingMatch[1] : '';
 
-        // Wrap the dispatch in a try-catch to debug any potential issues
-        try {
-            dispatch(setParkingRecommendation(recommendation));
-        } catch (error) {
-            console.error('Error dispatching recommendation:', error);
-        }
+    if (buildingNumber) {
+      // Use setTimeout to break the synchronous update cycle
+      setTimeout(() => {
+        axios.post('/api/conversations/smart-response', {
+          eventUserId: currentState.user.user?.id,
+          message: text,
+          specialNeeds: userSpecialNeeds
+        })
+        .then(response => {
+          if (response.data) {
+            dispatch(setParkingRecommendation(response.data));
+          }
+        })
+        .catch(error => {
+          console.error('Error getting parking recommendation:', error);
+        });
+      }, 0);
     }
   }
-
-  // Add special needs detection
-  const checkAndUpdateSpecialNeeds = (text: string) => {
-    const needsEV = /Here's your summarized special needs:.*(?:you need.*EV charging|you need.*EV.*spot|EV charging spot)/i.test(text);
-    const needsAccessible = /Here's your summarized special needs:.*(?:handicap|disabled|wheelchair|accessibility)/i.test(text);
-    const needsCloserToElevator = /Here's your summarized special needs:.*(?:closer.*elevator|near.*elevator|elevator.*access)/i.test(text);
-
-    // Check for modifications
-    const modifyNeedsEV = /modify.*EV charging|remove.*EV charging/i.test(text);
-    const modifyNeedsAccessible = /modify.*accessibility|remove.*accessibility/i.test(text);
-    const modifyNeedsCloserToElevator = /modify.*elevator|remove.*elevator/i.test(text);
-
-    const currentState = store.getState();
-    const currentUser = currentState.user.user;
-
-    console.log('needsEV', needsEV);
-
-    if (currentUser) {
-      const updatedSpecialNeeds = {
-        needsEV: modifyNeedsEV ? false : needsEV,
-        needsAccessible: modifyNeedsAccessible ? false : needsAccessible,
-        needsCloserToElevator: modifyNeedsCloserToElevator ? false : needsCloserToElevator,
-      };
-
-      dispatch(updateSpecialNeeds(updatedSpecialNeeds));
-    }
-  };
-
-  // Call this at the start of parsing
-  checkAndUpdateSpecialNeeds(text);
 
   return parts;
 }; 

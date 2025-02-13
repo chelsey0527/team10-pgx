@@ -7,14 +7,17 @@ interface ParkingRecommendation {
   color: string;
   zone: string;
   showMapNotification: boolean;
+  // Add any additional fields that come from getParkingRecommendation
 }
 
 interface ParkingState {
   recommendation: ParkingRecommendation | null;
+  lastUpdated?: Date;
 }
 
 const initialState: ParkingState = {
   recommendation: null,
+  lastUpdated: undefined,
 };
 
 const parkingSlice = createSlice({
@@ -23,9 +26,14 @@ const parkingSlice = createSlice({
   reducers: {
     setParkingRecommendation: (state, action: PayloadAction<ParkingRecommendation>) => {
       state.recommendation = action.payload;
+      state.lastUpdated = new Date();
+    },
+    clearParkingRecommendation: (state) => {
+      state.recommendation = null;
+      state.lastUpdated = undefined;
     },
   },
 });
 
-export const { setParkingRecommendation } = parkingSlice.actions;
+export const { setParkingRecommendation, clearParkingRecommendation } = parkingSlice.actions;
 export default parkingSlice.reducer; 

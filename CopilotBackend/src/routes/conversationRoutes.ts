@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import axios from 'axios';
 import { messageTemplates } from '../utils/messageTemplates';
 import { getParkingRecommendation } from '../utils/parkingRecommendation';
-// import { findBestParking, ParkingGraph, ParkingPreferences } from '../utils/parkingRecommendation';
+import OpenAI from 'openai';
 
 const router = express.Router();
 const prisma = new PrismaClient();

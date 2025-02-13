@@ -63,7 +63,7 @@ app.use('/api', (req, res, next) => {
   next();
 }, activationRoutes);
 
-// app.use('/api/parking', parkingRoutes);
+app.use('/api/parking', parkingRoutes);
 
 // Add catch-all route for debugging
 app.use('*', (req, res) => {
