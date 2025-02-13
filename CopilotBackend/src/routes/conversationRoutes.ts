@@ -165,11 +165,12 @@ router.post('/smart-response', async (req, res) => {
       console.log('Parking recommendation triggered:', parkingRecommendation);
     }
 
+    // Add the recommendation to the templates object that's passed in the initial greeting
     const messages = [
       messageTemplates.initialGreeting(user, event, parkingRecommendation),
       ...conversationHistory.map(msg => ({
         role: msg.sender === 'user' ? 'user' : 'assistant',
-        content: msg.message,
+        content: msg.message.replace('-----', '') // Clean up any placeholder dashes
       })),
       { role: 'user', content: message }
     ];
@@ -194,19 +195,26 @@ router.post('/smart-response', async (req, res) => {
 
     const aiMessage = response.data.choices[0]?.message?.content || '';
     
-    // console.log('AI Response:', aiMessage);
+    // If the message contains the final recommendation template, replace placeholders with actual values
+    let processedMessage = aiMessage;
+    if (parkingRecommendation && aiMessage.includes('Park in P1')) {
+      processedMessage = aiMessage
+        .replace('P1 -----', `P1 ${parkingRecommendation.location || ''}`)
+        .replace('----- elevator', `${parkingRecommendation.elevator || ''} elevator`)
+        .replace('----- spots', `${parkingRecommendation.spots || ''} spots`);
+    }
 
-    // Store the bot's response with the forced template
+    // Store the bot's response with the processed message
     await prisma.conversation.create({
       data: {
         conversationId: eventUserId,
         eventUserId,
         sender: 'bot',
-        message: aiMessage,
+        message: processedMessage,
       },
     });
 
-    res.json({ message: aiMessage, recommendation: parkingRecommendation });
+    res.json({ message: processedMessage, recommendation: parkingRecommendation });
   } catch (error: any) {
     console.error('Smart response error:', error);
     res.status(500).json({ 

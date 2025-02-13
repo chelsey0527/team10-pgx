@@ -124,7 +124,7 @@ export const messageTemplates = {
   finalRecommendation: (recommendation: any) => ({
     role: 'bot',
     content: [
-      `Based on your vehicle model and your destination, we recommend you park in the East Campus Garage and enter through the East Entrance.`,
+      `Based on your information, we recommend you park in the East Campus Garage and enter through the East Entrance.`,
       '',
       `**Visitor parking is ONLY available on P1 and P2.**`,
       '',
