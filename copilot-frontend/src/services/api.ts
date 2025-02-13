@@ -44,11 +44,20 @@ export const getBotResponse = async (eventUserId: string, userMessage: string) =
   return response.data;
 };
 
-export const getSmartBotResponse = async (eventUserId: string, message: string) => {
+export const getSmartBotResponse = async (
+  eventUserId: string, 
+  message: string,
+  specialNeeds: {
+    needsEV: boolean;
+    needsAccessible: boolean;
+    needsCloserToElevator: boolean;
+  }
+) => {
   try {
     const response = await api.post('/api/conversations/smart-response', {
       eventUserId,
       message,
+      specialNeeds
     }, {
       headers: {
         'Authorization': `Bearer ${GROQ_API_KEY}`,
@@ -68,15 +77,3 @@ export const registerCarPlate = async (eventUserId: string, carPlate: string) =>
   });
   return response.data;
 };
-
-// export const getParkingRecommendation = async (specialNeeds: any) => {
-//   try {
-//     const response = await api.post('/api/parking/recommendation', {
-//       specialNeeds
-//     });
-//     return response.data;
-//   } catch (error) {
-//     console.error('Error details:', error);
-//     throw error;
-//   }
-// }; 
