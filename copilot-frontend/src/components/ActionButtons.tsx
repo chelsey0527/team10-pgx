@@ -24,7 +24,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({ onActionClick, age
     actions = [
       { label: "EV charging station", message: "ev charging station" },
       { label: "Accessible", message: "accessible" },
-      { label: "No needs", message: "No needs" },
+      { label: "No", message: "No needs" },
     ];
   }
 
