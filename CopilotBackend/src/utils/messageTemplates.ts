@@ -24,7 +24,7 @@ export const messageTemplates = {
         contactAdmin: messageTemplates.contactAdmin().content,
       }),
       
-      `The sequence:`,
+      `The sequence (from 1 to 6):`,
       `1. (Already done in initial prompt) You double check meeting informations with the user. 
        - If they respond with "yes", proceed to step 2. 
        - If they respond with "no" use the "contactAdmin message TEMPLATE".
@@ -52,18 +52,20 @@ export const messageTemplates = {
       
       `5. Briefly summarize their special needs in the message after wards, you must mention "Here's your summarized special needs" and 
         "Am I understand it right?" in the message. the following is how we should categorize their special needs:
-          - if injuries (into tags: closer to elevator) and combine your recommendation with the "Here's your summarized special needs: You need to park closer to elevator"
-          - if pregnancy (into tags: closer to elevator) and combine your recommendation with the "Here's your summarized special needs: You need to park closer to elevator"
-          - if accessibility (into tags: closer to elevator, accessible parking) and combine your recommendation with the "Here's your summarized special needs: You need to park closer to elevator"
-          - if EV charging (into tags: ev charging spot) and combine your recommendation with the "Here's your summarized special needs: You need EV charging spot"
+          - tag: closer to elevator (if injuries, pregnancy, accessibility realted, old people, etc)
+          - tag: ev charging spot (if EV charging related or EV car related)
         - Go to step 6 only after user confirmed special needs and respond with yes or no,  
         - then we will go to parkingRecommendation.ts to get the recommendation
       `,
+   
       
       `6. Generate final recommendation (use finalRecommendation message TEMPLATE)
-       you have to fetch the recommendation fomr the 
        `,
-  
+
+      'if user said want to modify their special needs you should move back to step 5 and ask for their special needs again',
+      'but if user specifically tell you "i drive ev" or "i need ev charging spot" or "no need", you should move to step 6 and generate recommendation based on their special needs',
+
+      
       `After you passively and politely ask user to finish these process, you are allowed to answer questions related to the parking but make it short and delightful (some emojis)`,
       `if relate to Microsoft. remember Microsoft is your boss, your company, and you should never say something that will hurt the company,`,
       `Also don't sound like a robot when answering questions other than scripted templates, 
@@ -94,13 +96,6 @@ export const messageTemplates = {
     ].join('\n')
   }),
 
-  // foundCarplate: (user: any, vehicleInfo: any, event: any) => ({  
-  //   role: 'bot',
-  //   content: [
-  //     `I see your car being regrister as (user the Hser carplate being stored)`,
-  //   ].join('\n')
-  // }),
-
   confirmRegistration: (user: any, vehicleInfo: any, event: any) => ({  
     role: 'bot',
     content: [
@@ -121,8 +116,6 @@ export const messageTemplates = {
   collectNeeds: (user: any, vehicleInfo: any, event: any) => ({  
     role: 'bot',
     content: [
-      `Sure! Now I will provide you with parking recommendation.`,
-      '',
       `Do you have any special needs regarding to your suggested spots? (e.g. EV charging station, injuries, pregnancy, or accessibility)`,
     ].join('\n')
   }),
@@ -136,9 +129,11 @@ export const messageTemplates = {
       '',
       `For the shortest walk to your destination:`,
       '',
-      `1. Park in P1 ${recommendation.location}`,
-      `2. Take the ${recommendation.elevator} elevator`,
-      `3. There are currently ${recommendation.spots} spots available in this area`,
+      `1.Park in P1 ${recommendation?.location || '-----'}`,
+      '',
+      `2.Take the ${recommendation?.elevator || '-----'} elevator`,
+      '',
+      `3. There are currently ${recommendation?.spots || '-----'} spots available in this area`,
       '',
       `You can view interactive map for more detiails. Let me know if you need any clarification or have questions!`,
       '',

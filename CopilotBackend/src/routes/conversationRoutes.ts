@@ -85,38 +85,70 @@ router.post('/smart-response', async (req, res) => {
     // Get conversation history
     const conversationHistory = await prisma.conversation.findMany({
       where: { eventUserId },
-      orderBy: { createdAt: 'asc' },
-      take: 10,
+      orderBy: { createdAt: 'desc' },
+      take: 5,
     });
 
-    // Format conversation history for Groq
-    const formattedHistory: ChatMessage[] = conversationHistory.map(msg => ({
-      role: msg.sender === 'user' ? 'user' : 'assistant',
-      content: msg.message,
-    }));
+    // Get the last bot message
+    const lastBotMessage = conversationHistory
+      .find(msg => msg.sender === 'bot');
 
-    // Before getting recommendation, extract special needs from conversation
+    console.log('Current message:', message);
+    console.log('Last bot message:', lastBotMessage);
+
     const specialNeeds = {
-      needsEV: conversationHistory.some(msg => msg.message.toLowerCase().includes('ev charging')),
-      needsAccessible: conversationHistory.some(msg => 
-        msg.message.toLowerCase().includes('accessibility') || 
-        msg.message.toLowerCase().includes('wheelchair')),
-      needsCloserToElevator: conversationHistory.some(msg => 
-        msg.message.toLowerCase().includes('injuries') || 
-        msg.message.toLowerCase().includes('pregnancy'))
+      needsEV: false,
+      needsAccessible: false,
+      needsCloserToElevator: false
     };
 
-    const recommendation = await getParkingRecommendation(
-      event.meetingBuilding,
-      specialNeeds
-    );
+    // Convert messages to lowercase for easier checking
+    const currentMessageLower = message.toLowerCase();
+    const lastBotMessageLower = lastBotMessage?.message.toLowerCase() || '';
+
+    // Check conditions to set EV flag
+    if (
+      // If user explicitly mentions EV needs
+      currentMessageLower.includes('ev') ||
+      currentMessageLower.includes('ev charging') ||
+      currentMessageLower.includes('ev charging station') ||
+      currentMessageLower.includes('i drive ev') ||
+      // Or if they're modifying in response to EV question
+      (currentMessageLower.includes('modify') && 
+       lastBotMessageLower.includes('need an ev charging spot'))
+    ) {
+      specialNeeds.needsEV = true;
+    }
+
+    // Check conditions to unset EV flag
+    if (
+      currentMessageLower.includes("don't drive ev") || 
+      currentMessageLower.includes("no needs") ||
+      lastBotMessageLower.includes("don't have any specific requirements")
+    ) {
+      specialNeeds.needsEV = false;
+    }
+    
+    console.log('------------------------------------------ 0. lastBotMessageLower', lastBotMessageLower);
+    console.log('0. specialNeeds', specialNeeds);
+    
+    let parkingRecommendation;
+    if (lastBotMessageLower.includes("here's your summarized special needs:")) {
+      parkingRecommendation = await getParkingRecommendation(
+        event.meetingBuilding,
+        specialNeeds
+      );
+      console.log('------------------------------------------ 1. recommendation', parkingRecommendation);
+    }
 
     const messages = [
-      messageTemplates.initialGreeting(user, event, recommendation),
-      ...formattedHistory,
+      messageTemplates.initialGreeting(user, event, parkingRecommendation),
+      ...conversationHistory.map(msg => ({
+        role: msg.sender === 'user' ? 'user' : 'assistant',
+        content: msg.message,
+      })),
       { role: 'user', content: message }
     ];
-
 
     const response = await axios.post(API_URL, {
       messages,
@@ -130,6 +162,8 @@ router.post('/smart-response', async (req, res) => {
         'Content-Type': 'application/json',
       }
     });
+
+    console.log('------------------------------------------ 2. response', response.data.choices[0]?.message?.content);
 
     const aiMessage = response.data.choices[0]?.message?.content || '';
     
@@ -145,7 +179,7 @@ router.post('/smart-response', async (req, res) => {
       },
     });
 
-    res.json({ message: aiMessage, recommendation: recommendation});
+    res.json({ message: aiMessage, recommendation: parkingRecommendation });
   } catch (error: any) {
     console.error('Smart response error:', error);
     res.status(500).json({ 
@@ -231,81 +265,5 @@ router.post('/register-plate', async (req, res) => {
     res.status(500).json({ error: 'Failed to register car plate' });
   }
 });
-
-// router.post('/recommend-parking', async (req, res) => {
-//   try {
-//     const { 
-//       eventUserId,
-//       entranceId,
-//       preferences
-//     }: {
-//       eventUserId: string;
-//       entranceId: string;
-//       preferences: ParkingPreferences;
-//     } = req.body;
-
-//     // Get event details to load correct parking graph
-//     const eventUser = await prisma.eventUser.findUnique({
-//       where: { id: eventUserId },
-//       include: { event: true }
-//     });
-
-//     if (!eventUser || !eventUser.event) {
-//       throw new Error('Event user or event not found');
-//     }
-
-//     // In the future, this would come from your database based on the event
-//     const parkingGraph: ParkingGraph = {
-//       nodes: [
-//         // Example nodes - in production, load from database
-//         {
-//           id: 'entrance1',
-//           type: 'entrance',
-//           coordinates: { x: 0, y: 0, z: 0 }
-//         },
-//         {
-//           id: 'parking1',
-//           type: 'parking',
-//           coordinates: { x: 10, y: 10, z: 0 },
-//           features: {
-//             isEV: true,
-//             nearElevator: true
-//           }
-//         }
-//         // ... more nodes
-//       ],
-//       edges: [
-//         // Example edges - in production, load from database
-//         {
-//           from: 'entrance1',
-//           to: 'parking1',
-//           weight: 10
-//         }
-//         // ... more edges
-//       ]
-//     };
-
-//     const recommendation = findBestParking(parkingGraph, entranceId, preferences);
-
-//     // Store the recommendation in the conversation
-//     await prisma.conversation.create({
-//       data: {
-//         conversationId: eventUserId,
-//         eventUserId,
-//         sender: 'bot',
-//         message: `I've found the perfect parking spot for you! Follow this path: ${recommendation.path.join(' → ')}`,
-//       },
-//     });
-
-//     res.json({
-//       success: true,
-//       recommendation
-//     });
-
-//   } catch (error) {
-//     console.error('Error generating parking recommendation:', error);
-//     res.status(500).json({ error: 'Failed to generate parking recommendation' });
-//   }
-// });
 
 export default router; 

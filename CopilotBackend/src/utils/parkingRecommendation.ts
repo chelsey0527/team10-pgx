@@ -35,7 +35,7 @@ export async function getParkingRecommendation(
     needsCloserToElevator: Boolean(specialNeeds.needsCloserToElevator)
   };
 
-  console.log('-----------------', sanitizedNeeds.needsEV, sanitizedNeeds.needsAccessible);
+//   console.log('-----------------', sanitizedNeeds.needsEV, sanitizedNeeds.needsAccessible);
 
   const garages = await prisma.garage.findMany({
     where: {
@@ -53,7 +53,7 @@ export async function getParkingRecommendation(
     }
   });
 
-  console.log('Garages found:', garages);
+//   console.log('Garages found:', garages);
 
   if (!garages.length) {
     throw new Error('No suitable parking spots found');

@@ -20,7 +20,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({ onActionClick, age
       { label: "Modify", message: "Modify" },
       { label: "Recommend Best Parking Area", message: "Recommend Best Parking Area" },
     ];
-  } else if (agentMessage.includes("Do you have any special needs regarding to your suggested spots")) {
+  } else if (agentMessage.includes("Do you have any special needs")) {
     actions = [
       { label: "EV Charging Station", message: "ev charging station" },
       { label: "Accessible", message: "accessible" },
