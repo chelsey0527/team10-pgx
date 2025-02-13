@@ -3,6 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import mapDemo from '../assets/map-demo.png';
 import generalBlueB1 from '../assets/general-blue-b-1.png';
 import evOrangeB1 from '../assets/ev-orange-b-1.png';
+import floor2 from '../assets/floor-2.png';
 import { setParkingRecommendation } from '../store/parkingSlice';
 import { RootState } from '../store/store';
 import Draggable from 'react-draggable';
@@ -38,20 +39,19 @@ const Map = () => {
 
   // Function to determine which map to show
   const getMapImage = () => {
+    if (selectedLevel === 'P2') {
+      return floor2;
+    }
+
     if (!recommendedParking) return mapDemo;
 
-    // Parse the location string to get color and zone
-    const location = recommendedParking.location?.toLowerCase() || '';
     const color = recommendedParking.color?.toLowerCase() || '';
     const zone = recommendedParking.zone?.toLowerCase() || '';
 
-    // Match the format: "{color}-{zone}-{level}.png"
-    console.log(userNeeds?.needsEV, color, zone)
     if (color === 'orange' && zone === 'b') {
       return evOrangeB1;
     }
 
-    // Default to general blue B1 map for general parking
     return generalBlueB1;
   };
 
@@ -124,11 +124,7 @@ const Map = () => {
   // Add this new function to handle level selection
   const handleLevelSelect = (level: string) => {
     setSelectedLevel(level);
-    // Here you can add logic to change the map view based on level
   };
-
-  // Modify existing console.log
-  console.log('Map component mounted:', recommendedParking);
 
   return (
     <div className="flex flex-col h-[calc(100vh-5rem)] bg-white pt-10 pb-2">
@@ -162,11 +158,19 @@ const Map = () => {
             <img 
               src={getMapImage()}
               alt="Parking Map" 
-              className="max-w-[200%] h-auto pt-[100px]"
+              className="max-w-[200%] h-auto pt-[100px] transition-opacity duration-300 ease-in-out"
               draggable={false}
+              style={{
+                opacity: isImageLoading ? 0 : 1
+              }}
+              onLoad={() => setIsImageLoading(false)}
             />
             {getCurrentMapConfig().markers.map(marker => (
-              <MapMarker key={marker.id} marker={marker} />
+              <MapMarker 
+                key={marker.id} 
+                marker={marker} 
+                selectedLevel={selectedLevel}
+              />
             ))}
           </div>
         </Draggable>
@@ -176,11 +180,14 @@ const Map = () => {
           {['P1', 'P2'].map((level) => (
             <button
               key={level}
-              onClick={() => handleLevelSelect(level)}
-              className={`px-4 py-2 text-sm transition-colors ${
+              onClick={() => {
+                setIsImageLoading(true);
+                handleLevelSelect(level);
+              }}
+              className={`px-4 py-2 text-sm transition-all duration-300 ${
                 selectedLevel === level
-                  ?  'text-black font-bold'
-                  : 'text-gray-400 '
+                  ? 'text-black font-bold bg-white'
+                  : 'text-gray-400 hover:bg-gray-100'
               }`}
             >
               {level}
@@ -223,7 +230,11 @@ const Map = () => {
                   draggable={false}
                 />
                 {getCurrentMapConfig().markers.map(marker => (
-                  <MapMarker key={marker.id} marker={marker} />
+                  <MapMarker 
+                    key={marker.id} 
+                    marker={marker} 
+                    selectedLevel={selectedLevel}
+                  />
                 ))}
               </div>
             </Draggable>

@@ -3,19 +3,17 @@ import { MapMarker as MapMarkerType } from '../types/map';
 
 interface Props {
   marker: MapMarkerType;
+  selectedLevel: string;
 }
 
-const MapMarker: React.FC<Props> = ({ marker }) => {
+const MapMarker: React.FC<Props> = ({ marker, selectedLevel }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const bubbleRef = useRef<HTMLDivElement>(null);
 
-  // Handle click outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      // Check if click is on the expanded bubble or its children
       if (bubbleRef.current && 
           !bubbleRef.current.contains(event.target as Node) && 
-          // Only check if click target is not the bubble trigger itself
           !(event.target as Element).closest('.bubble-trigger')) {
         setIsExpanded(false);
       }
@@ -29,6 +27,10 @@ const MapMarker: React.FC<Props> = ({ marker }) => {
       document.removeEventListener('mousedown', handleClickOutside, true);
     };
   }, [isExpanded]);
+
+  if (selectedLevel !== 'P1') {
+    return null;
+  }
 
   return (
     <div
