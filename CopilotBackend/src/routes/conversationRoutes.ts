@@ -117,14 +117,8 @@ router.post('/smart-response', async (req, res) => {
       { role: 'user', content: message }
     ];
 
-    // Add logging to debug the request
-    console.log('Sending request to Groq API:', JSON.stringify({
-      messages,
-      model: "llama-3.3-70b-versatile",
-      temperature: 0.7,
-      max_tokens: 150,
-      stream: false
-    }, null, 2));
+    // Add better logging for debugging
+    console.log('Making Groq API call with key:', process.env.GROQ_API_KEY ? 'Key exists' : 'No key found');
 
     const response = await axios.post(API_URL, {
       messages,

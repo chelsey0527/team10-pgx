@@ -11,6 +11,12 @@ import { Message } from '../types/message';
 import { parseMessage } from '../utils/messageParser';
 import { ActionButtons } from '../components/ActionButtons';
 
+interface SpecialNeeds {
+  needsEV: boolean;
+  needsAccessible: boolean;
+  needsCloserToElevator: boolean;
+}
+
 const formatMessage = (msg: any): Message => ({
   text: msg.message,
   sender: msg.sender,
@@ -25,6 +31,11 @@ export const Chatbot = () => {
   const [messages, setMessages] = useState<Array<Message>>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [specialNeeds, setSpecialNeeds] = useState<SpecialNeeds>({
+    needsEV: false,
+    needsAccessible: false,
+    needsCloserToElevator: false
+  });
   
   // Add ref to track initialization
   const hasInitialized = React.useRef(false);
@@ -162,7 +173,7 @@ export const Chatbot = () => {
 
       await createConversation(eventUser.id, 'user', userMessage);
 
-      const { message: botResponse } = await getSmartBotResponse(eventUser.id, userMessage);
+      const { message: botResponse } = await getSmartBotResponse(eventUser.id, userMessage, specialNeeds);
       
       if (botResponse.includes('view interactive map')) {
         dispatch(setShowMapNotification(true));

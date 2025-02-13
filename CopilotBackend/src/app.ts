@@ -33,22 +33,6 @@ app.use((req, res, next) => {
 // Add debug log
 console.log('Backend API Key:', process.env.GROQ_API_KEY);
 
-// Add middleware to verify API key for smart responses
-app.use('/api/conversations/smart-response', (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  const apiKey = process.env.GROQ_API_KEY;
-  
-  if (!authHeader || !authHeader.startsWith('Bearer ') || authHeader.split(' ')[1] !== apiKey) {
-    return res.status(401).json({ 
-      error: 'Unauthorized',
-      received: authHeader?.split(' ')[1],
-      expected: apiKey,
-    });
-  }
-  
-  next();
-});
-
 // Use routes - Important: Order matters!
 app.use('/api/conversations', (req, res, next) => {
   console.log('Hitting conversations middleware');
