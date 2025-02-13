@@ -12,12 +12,12 @@ interface ParkingRecommendation {
 
 interface ParkingState {
   recommendation: ParkingRecommendation | null;
-  lastUpdated?: Date;
+  lastUpdated: Date | null;
 }
 
 const initialState: ParkingState = {
   recommendation: null,
-  lastUpdated: undefined,
+  lastUpdated: null,
 };
 
 const parkingSlice = createSlice({
@@ -30,7 +30,7 @@ const parkingSlice = createSlice({
     },
     clearParkingRecommendation: (state) => {
       state.recommendation = null;
-      state.lastUpdated = undefined;
+      state.lastUpdated = null;
     },
   },
 });
