@@ -22,8 +22,9 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({ onActionClick, age
     ];
   } else if (agentMessage.includes("Do you have any special needs")) {
     actions = [
-      { label: "EV Charging Station", message: "ev charging station" },
+      { label: "EV charging station", message: "ev charging station" },
       { label: "Accessible", message: "accessible" },
+      { label: "No needs", message: "No needs" },
     ];
   }
 
