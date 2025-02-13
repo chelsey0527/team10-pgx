@@ -38,10 +38,6 @@ app.use('/api/conversations/smart-response', (req, res, next) => {
   const authHeader = req.headers.authorization;
   const apiKey = process.env.GROQ_API_KEY;
   
-  console.log('Comparing:');
-  console.log('Received:', authHeader?.split(' ')[1]);
-  console.log('Expected:', apiKey);
-  
   if (!authHeader || !authHeader.startsWith('Bearer ') || authHeader.split(' ')[1] !== apiKey) {
     return res.status(401).json({ 
       error: 'Unauthorized',

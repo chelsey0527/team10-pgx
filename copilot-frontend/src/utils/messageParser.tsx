@@ -6,7 +6,7 @@ import { MeetingCard } from '../components/MeetingCard';
 import { setParkingRecommendation } from '../store/parkingSlice';
 import { AnyAction, Dispatch } from '@reduxjs/toolkit';
 import { store } from '../store/store';
-import { setUser } from '../store/userSlice';
+import { setUser, updateSpecialNeeds } from '../store/userSlice';
 
 export const parseMessage = (text: string, dispatch: Dispatch<AnyAction>): React.JSX.Element[] => {
   const parts: React.JSX.Element[] = [];
@@ -187,30 +187,28 @@ export const parseMessage = (text: string, dispatch: Dispatch<AnyAction>): React
 
   // Add special needs detection
   const checkAndUpdateSpecialNeeds = (text: string) => {
-    const needsEV = /(?:electric vehicle|ev charging|need.*charg)/i.test(text);
-    const needsAccessible = /(?:handicap|disabled|wheelchair|accessibility)/i.test(text);
-    const needsCloserToElevator = /(?:closer.*elevator|near.*elevator|elevator.*access)/i.test(text);
+    const needsEV = /Here's your summarized special needs:.*(?:you need.*EV charging|you need.*EV.*spot|EV charging spot)/i.test(text);
+    const needsAccessible = /Here's your summarized special needs:.*(?:handicap|disabled|wheelchair|accessibility)/i.test(text);
+    const needsCloserToElevator = /Here's your summarized special needs:.*(?:closer.*elevator|near.*elevator|elevator.*access)/i.test(text);
+
+    // Check for modifications
+    const modifyNeedsEV = /modify.*EV charging|remove.*EV charging/i.test(text);
+    const modifyNeedsAccessible = /modify.*accessibility|remove.*accessibility/i.test(text);
+    const modifyNeedsCloserToElevator = /modify.*elevator|remove.*elevator/i.test(text);
+
+    const currentState = store.getState();
+    const currentUser = currentState.user.user;
 
     console.log('needsEV', needsEV);
-    if (needsEV || needsAccessible || needsCloserToElevator) {
-      // Get current user state
-      const currentState = store.getState();
-      const currentUser = currentState.user.user;
 
-      console.log('-----currentUser', currentUser);
+    if (currentUser) {
+      const updatedSpecialNeeds = {
+        needsEV: modifyNeedsEV ? false : needsEV,
+        needsAccessible: modifyNeedsAccessible ? false : needsAccessible,
+        needsCloserToElevator: modifyNeedsCloserToElevator ? false : needsCloserToElevator,
+      };
 
-      if (currentUser) {
-        // Update user with new special needs
-        dispatch(setUser({
-          ...currentUser,
-          specialNeeds: {
-            ...(currentUser.specialNeeds || {}),
-            needsEV,
-            needsAccessible,
-            needsCloserToElevator
-          }
-        }));
-      }
+      dispatch(updateSpecialNeeds(updatedSpecialNeeds));
     }
   };
 

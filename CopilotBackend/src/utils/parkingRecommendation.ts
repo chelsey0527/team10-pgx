@@ -1,3 +1,11 @@
+//for this system i want to write a unit test to :
+
+// - show the current user attribute being extracted (including their meeting venue, special needs)
+// - showcase the recommendation calculation is precisely based on the following flow:
+// each special area has elevator1, evevator_building1 and weight1. Which for example accessible spot at blue	A zeon has 5 spots.
+// And it is closet to North elevator which leads to building	3-7(stored as string) and the weight is rank is 1. i want you to calcuate the score  of each area with special needs, availability, closet to their eveny building that directs the most efficient parking area for them
+// - show the recommended result 
+
 import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
@@ -38,6 +46,8 @@ export async function getParkingRecommendation(
     }
   });
 
+  console.log('Garages found:', garages);
+
   if (!garages.length) {
     throw new Error('No suitable parking spots found');
   }
@@ -50,7 +60,7 @@ export async function getParkingRecommendation(
     let score = 0;
     
     // Score based on spots (normalize to 0-100)
-    score += (garage.spots / Math.max(...garages.map(g => g.spots))) * 100;
+    score += ((garage.spots ?? 0) / Math.max(...garages.map(g => g.spots ?? 0))) * 100;
     
     // Score based on best weight to the building
     const bestWeight = Math.max(
@@ -63,6 +73,8 @@ export async function getParkingRecommendation(
     if (specialNeeds.needsCloserToElevator) {
       score += bestWeight * 25;
     }
+
+    console.log(`Garage: ${garage.color} Zone ${garage.zone}, Score: ${score}, Best Weight: ${bestWeight}`);
 
     return {
       garage,
@@ -84,13 +96,15 @@ export async function getParkingRecommendation(
     bestGarage.weight1 >= (bestGarage.weight2 || 0);
 
   const recommendation = {
-    location: `${bestGarage.color} Zone ${bestGarage.zone}`,
+    location: `${bestGarage.color!} Zone ${bestGarage.zone!}`,
     elevator: useElevator1 ? bestGarage.elevator1 : bestGarage.elevator2,
-    spots: bestGarage.spots,
-    color: bestGarage.color,
-    zone: bestGarage.zone,
+    spots: bestGarage.spots!,
+    color: bestGarage.color!,
+    zone: bestGarage.zone!,
     showMapNotification: true
   };
+
+  console.log('Recommendation:', recommendation);
 
   return recommendation;
 }

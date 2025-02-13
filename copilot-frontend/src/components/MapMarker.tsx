@@ -83,7 +83,7 @@ const MapMarker: React.FC<Props> = ({ marker }) => {
             {isExpanded && (
               <div 
                 ref={bubbleRef}
-                className="absolute bottom-[100%] left-1/2 transform -translate-x-1/2 mb-4 bg-[#fbe7d7] rounded-lg shadow-lg p-4 w-[300px] clickable z-50"
+                className="absolute bottom-[100%] left-1/2 transform -translate-x-1/2 mb-4 bg-[#fbe7d7] rounded-lg shadow-lg p-4 w-[200px] clickable z-50"
               >
                 {/* Close button */}
                 <button 
@@ -109,16 +109,16 @@ const MapMarker: React.FC<Props> = ({ marker }) => {
                   </svg>
                 </button>
 
-                <div className="flex flex-col gap-2">
-                  <div className="text-lg font-semibold">{marker.tooltip}</div>
-                  <div className="text-sm">
+                <div className="flex flex-col gap-1">
+                  <div className="text-md font-semibold">{marker.tooltip}</div>
+                  <div className="text-xs">
                     Available spots: 45/100
                   </div>
                   {marker.image && (
                     <img 
                       src={marker.image} 
                       alt={`${marker.tooltip} parking`}
-                      className="w-full h-40 object-cover"
+                      className="w-full h-20 object-cover"
                     />
                   )}
                 </div>

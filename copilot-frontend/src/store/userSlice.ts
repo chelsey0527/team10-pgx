@@ -19,6 +19,12 @@ interface User {
   // ... other fields
 }
 
+interface SpecialNeeds {
+  needsEV?: boolean;
+  needsAccessible?: boolean;
+  needsCloserToElevator?: boolean;
+}
+
 interface UserState {
   user: User | null;
   loading: boolean;
@@ -45,9 +51,12 @@ const userSlice = createSlice({
       state.user = null;
       state.isAuthenticated = false;
     },
-    updateSpecialNeeds: (state, action: PayloadAction<User['specialNeeds']>) => {
+    updateSpecialNeeds: (state, action: PayloadAction<SpecialNeeds>) => {
       if (state.user) {
-        state.user.specialNeeds = action.payload;
+        state.user.specialNeeds = {
+          ...state.user.specialNeeds,
+          ...action.payload,
+        };
       }
     },
     setLoading: (state, action: PayloadAction<boolean>) => {

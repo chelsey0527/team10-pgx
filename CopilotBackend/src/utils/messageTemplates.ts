@@ -52,10 +52,10 @@ export const messageTemplates = {
       
       `5. Briefly summarize their special needs in the message after wards, you must mention "Here's your summarized special needs" and 
         "Am I understand it right?" in the message. the following is how we should categorize their special needs:
-          - if injuries (into tags: closer to elevator)
-          - if pregnancy (into tags: closer to elevator)
-          - if accessibility (into tags: closer to elevator, accessible parking)
-          - if EV charging (into tags: ev charging spot)
+          - if injuries (into tags: closer to elevator) and combine your recommendation with the "Here's your summarized special needs: You need to park closer to elevator"
+          - if pregnancy (into tags: closer to elevator) and combine your recommendation with the "Here's your summarized special needs: You need to park closer to elevator"
+          - if accessibility (into tags: closer to elevator, accessible parking) and combine your recommendation with the "Here's your summarized special needs: You need to park closer to elevator"
+          - if EV charging (into tags: ev charging spot) and combine your recommendation with the "Here's your summarized special needs: You need EV charging spot"
         - Go to step 6 only after user confirmed special needs and respond with yes or no,  
         - then we will go to parkingRecommendation.ts to get the recommendation
       `,
