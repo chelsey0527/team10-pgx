@@ -118,7 +118,8 @@ const Map = () => {
       return mapConfigs['ev-orange-b1'];
     }
     
-    return mapConfigs['general-blue-b110'];
+    const stallNum = parseInt(recommendedParking.stallNumber?.toString() || '132');
+    return stallNum === 132 ?mapConfigs['general-blue-b132'] : mapConfigs['general-blue-b110'];
   };
 
   const [selectedLevel, setSelectedLevel] = useState('P1');

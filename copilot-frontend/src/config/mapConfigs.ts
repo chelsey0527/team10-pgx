@@ -34,8 +34,8 @@ export const mapConfigs: Record<string, MapConfig> = {
       },
       {
         id: 'parking-1',
-        x: 40,
-        y: 44,
+        x: 50,
+        y: 52,
         type: 'parking',
         tooltip: 'Parking Area',
         image: mapDemoActual,
