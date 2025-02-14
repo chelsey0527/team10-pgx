@@ -6,53 +6,52 @@ import conversationRoutes from './routes/conversationRoutes';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import parkingRoutes from './routes/parkingRoutes';
-const app = express();
+import { createServer } from 'http';
 
-// Move dotenv config to the top, before any other code
+// Load environment variables first
 dotenv.config();
 
-// Update CORS configuration
-app.use(cookieParser());
+const app = express();
+const server = createServer(app);
+
+// CORS configuration
 app.use(cors({
-  origin: 'http://localhost:3000', // or your frontend URL
+  origin: ['http://localhost:3000', 'ws://localhost:3000'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Upgrade', 'Connection'],
+  exposedHeaders: ['Upgrade']
 }));
 
-// Enable JSON body parsing
+// Middleware
+app.use(cookieParser());
 app.use(express.json());
 
-// Add this before any routes
+// Request logging
 app.use((req, res, next) => {
-  console.log('Incoming request:', req.method, req.url, req.path);
-  console.log('Request body:', req.body);
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
   next();
 });
 
-// Add debug log
-console.log('Backend API Key:', process.env.GROQ_API_KEY);
-
-// Use routes - Important: Order matters!
-app.use('/api/conversations', (req, res, next) => {
-  console.log('Hitting conversations middleware');
+// Add WebSocket specific headers middleware
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
+  res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
   next();
-}, conversationRoutes);
+});
 
+// Routes
+app.use('/api/conversations', conversationRoutes);
 app.use('/api/event-users', eventUserRoutes);
-
-// Add logging before activation routes
-app.use('/api', (req, res, next) => {
-  console.log('Hitting activation routes middleware');
-  next();
-}, activationRoutes);
-
+app.use('/api', activationRoutes);
 app.use('/api/parking', parkingRoutes);
 
-// Add catch-all route for debugging
+// Catch-all route
 app.use('*', (req, res) => {
   console.log('No route matched:', req.method, req.originalUrl);
   res.status(404).json({ error: 'Route not found' });
 });
 
-export default app;
+export { app, server };

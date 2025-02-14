@@ -11,6 +11,7 @@ import Draggable from 'react-draggable';
 import { mapConfigs } from '../config/mapConfigs';
 import MapMarker from '../components/MapMarker';
 import voiceIcon from '../assets/icon/Voice.png';
+import WebSocketService from '../services/websocketService';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3001';
 const GROQ_API_KEY = process.env.REACT_APP_API_KEY;
@@ -22,7 +23,7 @@ const Map = () => {
   
   // Convert state to refs for values that don't need re-renders
   // const lastUpdateTimeRef = useRef(0);
-  const parkingSpotsRef = useRef({ p1: 36, p2: 23 });
+  const [parkingSpots, setParkingSpots] = useState({ p1: 20, p2: 20 });
 
   // Update the selector to use typed state
   const userNeeds = useSelector((state: RootState) => 
@@ -163,6 +164,17 @@ const Map = () => {
     return 5;
   };
 
+  useEffect(() => {
+    const wsService = WebSocketService.getInstance();
+    const unsubscribe = wsService.subscribe((data) => {
+      setParkingSpots(data);
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
   return (
     <div className="flex flex-col h-[calc(100vh-5rem)] bg-white pt-10 pb-2">
       <span className="text-lg mb-4 font-bold px-8">Visitor Parking Spots Available </span>
@@ -174,12 +186,12 @@ const Map = () => {
       <div className="flex gap-4 mb-2 px-8">
         <div className="flex-1 max-w-[200px] bg-white rounded-xl shadow-md flex items-center h-12">
           <div className="flex items-center justify-center text-[#BE8544] text-lg bg-[#fbe7d7] rounded-xl h-full w-10">P1</div>
-          <div className="text-xl font-medium flex-1 text-center">{parkingSpotsRef.current.p1}</div>
+          <div className="text-xl font-medium flex-1 text-center">{parkingSpots.p1}</div>
         </div>
         
         <div className="flex-1 max-w-[200px] bg-white rounded-xl shadow-md flex items-center h-12">
           <div className="flex items-center justify-center text-[#BE8544] text-lg bg-[#fbe7d7] rounded-xl h-full w-10">P2</div>
-          <div className="text-xl font-medium  flex-1 text-center">{parkingSpotsRef.current.p2}</div>
+          <div className="text-xl font-medium flex-1 text-center">{parkingSpots.p2}</div>
         </div>
       </div>
       
