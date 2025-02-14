@@ -4,9 +4,10 @@ import { MapMarker as MapMarkerType } from '../types/map';
 interface Props {
   marker: MapMarkerType;
   selectedLevel: string;
+  availableSpots: number;
 }
 
-const MapMarker: React.FC<Props> = ({ marker, selectedLevel }) => {
+const MapMarker: React.FC<Props> = ({ marker, selectedLevel, availableSpots }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const bubbleRef = useRef<HTMLDivElement>(null);
 
@@ -62,7 +63,6 @@ const MapMarker: React.FC<Props> = ({ marker, selectedLevel }) => {
               onClick={(e) => {
                 e.stopPropagation();
                 setIsExpanded(!isExpanded);
-                console.log('Bubble clicked, isExpanded:', !isExpanded);
               }}
             >
               <div className="w-[120px] h-10 bg-[#fbe7d7] rounded-lg flex items-center justify-center">
@@ -79,7 +79,6 @@ const MapMarker: React.FC<Props> = ({ marker, selectedLevel }) => {
               onClick={(e) => {
                 e.stopPropagation();
                 setIsExpanded(!isExpanded);
-                console.log('Dot clicked, isExpanded:', !isExpanded);
               }}
             />
             {isExpanded && (
@@ -114,7 +113,7 @@ const MapMarker: React.FC<Props> = ({ marker, selectedLevel }) => {
                 <div className="flex flex-col gap-1">
                   <div className="text-md font-semibold">{marker.tooltip}</div>
                   <div className="text-xs">
-                    Available spots: 45/100
+                    Available spots: {availableSpots}
                   </div>
                   {marker.image && (
                     <img 

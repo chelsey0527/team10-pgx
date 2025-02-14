@@ -2,8 +2,28 @@ import { MapConfig } from '../types/map';
 import mapDemoActual from '../assets/map-demo-actual.png';
 
 export const mapConfigs: Record<string, MapConfig> = {
-  'general-blue-b1': {
-    id: 'general-blue-b1',
+  'general-blue-b110': {
+    id: 'general-blue-b110',
+    markers: [
+      {
+        id: 'entrance-1',
+        x: 58,
+        y: 28,
+        type: 'entrance',
+        tooltip: '156th Entrance'
+      },
+      {
+        id: 'parking-1',
+        x: 40,
+        y: 44,
+        type: 'parking',
+        tooltip: 'Parking Area',
+        image: mapDemoActual,
+      }
+    ]
+  },
+  'general-blue-b132': {
+    id: 'general-blue-b132',
     markers: [
       {
         id: 'entrance-1',

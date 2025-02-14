@@ -184,6 +184,7 @@ export const Chatbot = () => {
           location: recommendation.location,
           elevator: recommendation.elevator,
           spots: recommendation.spots,
+          stallNumber: recommendation.stallNumber,
           color: recommendation.color,
           zone: recommendation.zone,
           showMapNotification: true

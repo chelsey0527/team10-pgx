@@ -22,6 +22,7 @@ interface ParkingRecommendation {
   color: string;
   zone: string;
   showMapNotification: boolean;
+  stallNumber: string | null;
 }
 
 export async function getParkingRecommendation(
@@ -43,7 +44,6 @@ export async function getParkingRecommendation(
         { elevatorBuilding1: { contains: buildingNumber } },
         { elevatorBuilding2: { contains: buildingNumber } }
       ],
-      // Use sanitized values
       tag: sanitizedNeeds.needsEV ? 'ev' : 
            sanitizedNeeds.needsAccessible ? 'accessible' : 
            'general',
@@ -66,6 +66,16 @@ export async function getParkingRecommendation(
   const scoredGarages = garages.map(garage => {
     let score = 0;
     
+    // Only score garages with available spots
+    if (garage.spots <= 0) {
+      console.log(`Skipping garage ${garage.color} Zone ${garage.zone} - no spots available`);
+      return {
+        garage,
+        score: -1,
+        bestWeight: 0
+      };
+    }
+    
     // Score based on spots (normalize to 0-100)
     score += ((garage.spots ?? 0) / Math.max(...garages.map(g => g.spots ?? 0))) * 100;
     
@@ -81,14 +91,14 @@ export async function getParkingRecommendation(
       score += bestWeight * 25;
     }
 
-    console.log(`Garage: ${garage.color} Zone ${garage.zone}, Score: ${score}, Best Weight: ${bestWeight}`);
+    console.log(`Garage: ${garage.color} Zone ${garage.zone}, Score: ${score}, Best Weight: ${bestWeight}, Available Spots: ${garage.spots}`);
 
     return {
       garage,
       score,
       bestWeight
     };
-  });
+  }).filter(g => g.score >= 0); // Remove any garages with no spots
 
   // Sort by score descending
   scoredGarages.sort((a, b) => b.score - a.score);
@@ -108,7 +118,8 @@ export async function getParkingRecommendation(
     spots: bestGarage.spots!,
     color: bestGarage.color!,
     zone: bestGarage.zone!,
-    showMapNotification: true
+    showMapNotification: true,
+    stallNumber: bestGarage.stallNumber || null
   };
 
   console.log('Recommendation:', recommendation);

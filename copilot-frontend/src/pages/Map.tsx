@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import mapDemo from '../assets/map-demo.png';
-import generalBlueB1 from '../assets/general-blue-b-1.png';
+import generalBlueB110 from '../assets/general-blue-b-110.png';
+import generalBlueB132 from '../assets/general-blue-b-132.png';
 import evOrangeB1 from '../assets/ev-orange-b-1.png';
 import floor2 from '../assets/floor-2.png';
 import { setParkingRecommendation } from '../store/parkingSlice';
@@ -10,7 +11,6 @@ import Draggable from 'react-draggable';
 import { mapConfigs } from '../config/mapConfigs';
 import MapMarker from '../components/MapMarker';
 import voiceIcon from '../assets/icon/Voice.png';
-// import { getParkingRecommendation } from '../services/api';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3001';
 const GROQ_API_KEY = process.env.REACT_APP_API_KEY;
@@ -52,7 +52,9 @@ const Map = () => {
       return evOrangeB1;
     }
 
-    return generalBlueB1;
+    // Convert stallNumber to integer and compare
+    const stallNum = parseInt(recommendedParking.stallNumber?.toString() || '132');
+    return stallNum === 132 ? generalBlueB132 : generalBlueB110;
   };
 
   // Function to get detailed map image
@@ -69,7 +71,7 @@ const Map = () => {
       return evOrangeB1;
     }
 
-    return generalBlueB1;
+    return generalBlueB110;
   };
 
 
@@ -107,7 +109,7 @@ const Map = () => {
 
   // Function to get current map config
   const getCurrentMapConfig = () => {
-    if (!recommendedParking) return mapConfigs['general-blue-b1'];
+    if (!recommendedParking) return mapConfigs['general-blue-b110'];
     
     const color = recommendedParking.color?.toLowerCase() || '';
     const zone = recommendedParking.zone?.toLowerCase() || '';
@@ -116,7 +118,7 @@ const Map = () => {
       return mapConfigs['ev-orange-b1'];
     }
     
-    return mapConfigs['general-blue-b1'];
+    return mapConfigs['general-blue-b110'];
   };
 
   const [selectedLevel, setSelectedLevel] = useState('P1');
@@ -124,6 +126,40 @@ const Map = () => {
   // Add this new function to handle level selection
   const handleLevelSelect = (level: string) => {
     setSelectedLevel(level);
+  };
+
+  // Add useEffect to initialize parking recommendation
+  useEffect(() => {
+    // Initialize with default parking data
+    const initialParkingData = {
+      location: "blue Zone B",
+      elevator: "North",
+      spots: 5,
+      stallNumber: "132",
+      color: "blue",
+      zone: "B",
+      showMapNotification: true
+    };
+    
+    dispatch(setParkingRecommendation(initialParkingData));
+  }, []); // Empty dependency array means this runs once on component mount
+
+  // Get parking recommendation from Redux
+  const parkingRecommendation = useSelector((state: RootState) => state.parking?.recommendation);
+
+  // Function to get available spots for a marker
+  const getAvailableSpots = (markerTooltip: string) => {
+    if (!parkingRecommendation) return 5;
+    
+    const isRecommendedSpot = 
+      markerTooltip.toLowerCase().includes(parkingRecommendation.color?.toLowerCase() || '') &&
+      markerTooltip.toLowerCase().includes(parkingRecommendation.zone?.toLowerCase() || '');
+
+    if (isRecommendedSpot) {
+      return parkingRecommendation.spots || 5;
+    }
+    
+    return 5;
   };
 
   return (
@@ -170,6 +206,7 @@ const Map = () => {
                 key={marker.id} 
                 marker={marker} 
                 selectedLevel={selectedLevel}
+                availableSpots={getAvailableSpots(marker.tooltip)}
               />
             ))}
           </div>
@@ -234,6 +271,7 @@ const Map = () => {
                     key={marker.id} 
                     marker={marker} 
                     selectedLevel={selectedLevel}
+                    availableSpots={getAvailableSpots(marker.tooltip)}
                   />
                 ))}
               </div>
