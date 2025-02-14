@@ -69,9 +69,10 @@ class WebSocketService {
   private async sendParkingUpdate(ws: WebSocket): Promise<void> {
     try {
       const parkingSpots = await this.prisma.garage.findMany();
+      const totalSpots = parkingSpots.reduce((sum, spot) => sum + (spot.spots || 0), 0);
       const message = JSON.stringify({
         type: 'parkingUpdate',
-        data: parkingSpots
+        data: totalSpots
       });
       
       if (ws.readyState === WebSocket.OPEN) {
@@ -85,9 +86,10 @@ class WebSocketService {
   private async broadcastParkingUpdate(): Promise<void> {
     try {
       const parkingSpots = await this.prisma.garage.findMany();
+      const totalSpots = parkingSpots.reduce((sum, spot) => sum + (spot.spots || 0), 0);
       const message = JSON.stringify({
         type: 'parkingUpdate',
-        data: parkingSpots
+        data: totalSpots
       });
 
       this.clients.forEach(client => {

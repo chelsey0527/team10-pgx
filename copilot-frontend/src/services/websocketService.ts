@@ -5,6 +5,7 @@ class WebSocketService {
   private callbacks: Set<(data: any) => void> = new Set();
   private connectionAttempts: number = 0;
   private readonly maxReconnectAttempts: number = 5;
+  private subscribers: ((data: any) => void)[] = [];
 
   private constructor() {
     this.connect();
@@ -91,6 +92,13 @@ class WebSocketService {
     if (this.ws) {
       this.ws.close();
     }
+  }
+
+  public reconnect() {
+    if (this.ws) {
+      this.ws.close();
+    }
+    this.connect();
   }
 }
 

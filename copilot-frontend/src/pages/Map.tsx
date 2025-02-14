@@ -164,22 +164,64 @@ const Map = () => {
     return 5;
   };
 
+  // Add new state for last update time
+  const [lastUpdateTime, setLastUpdateTime] = useState<Date>(new Date());
+
+  // Update the WebSocket effect to include timestamp updates
   useEffect(() => {
     const wsService = WebSocketService.getInstance();
-    const unsubscribe = wsService.subscribe((data) => {
-      setParkingSpots(data);
+    
+    // Initial connection
+    const unsubscribe = wsService.subscribe((message) => {
+      setParkingSpots(prev => ({
+        p1: message,
+        p2: prev.p2
+      }));
+      setLastUpdateTime(new Date());
     });
+
+    // Set up polling interval for every minute
+    const pollInterval = setInterval(() => {
+      wsService.reconnect(); // Reconnect to get fresh data
+    }, 60000); // 60000ms = 1 minute
 
     return () => {
       unsubscribe();
+      clearInterval(pollInterval);
     };
   }, []);
+
+  // Update the time display refresh interval to be more efficient
+  useEffect(() => {
+    const timer = setInterval(() => {
+      // Force re-render to update the time display
+      setLastUpdateTime(prev => new Date(prev.getTime()));
+    }, 10000); // Update every 10 seconds instead of every second
+
+    return () => clearInterval(timer);
+  }, []);
+
+  // Update the time formatting function to be more precise
+  const getTimeSinceLastUpdate = () => {
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - lastUpdateTime.getTime()) / 1000);
+    
+    if (diffInSeconds < 60) {
+      return 'a minute';
+    } else if (diffInSeconds < 3600) {
+      const minutes = Math.floor(diffInSeconds / 60);
+      return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`;
+    } else {
+      const hours = Math.floor(diffInSeconds / 3600);
+      return `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+    }
+  };
 
   return (
     <div className="flex flex-col h-[calc(100vh-5rem)] bg-white pt-10 pb-2">
       <span className="text-lg mb-4 font-bold px-8">Visitor Parking Spots Available </span>
       <span className="text-sm text-gray-500 mb-6 px-8">
-        Last update: {'30 secs'} ago
+        Last update: {getTimeSinceLastUpdate()} ago
       </span>
       
       {/* Parking spot counters */}
