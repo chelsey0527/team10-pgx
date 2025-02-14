@@ -223,7 +223,7 @@ const Map = () => {
               }}
               className={`px-4 py-2 text-sm transition-all duration-300 ${
                 selectedLevel === level
-                  ? 'text-black font-bold bg-white'
+                  ? 'text-black font-bold'
                   : 'text-gray-400 hover:bg-gray-100'
               }`}
             >
