@@ -10,6 +10,13 @@ import { setShowMapNotification } from '../store/navigationSlice';
 import { Message } from '../types/message';
 import { parseMessage } from '../utils/messageParser';
 import { ActionButtons } from '../components/ActionButtons';
+import { setParkingRecommendation } from '../store/parkingSlice';
+
+interface SpecialNeeds {
+  needsEV: boolean;
+  needsAccessible: boolean;
+  needsCloserToElevator: boolean;
+}
 
 const formatMessage = (msg: any): Message => ({
   text: msg.message,
@@ -25,6 +32,11 @@ export const Chatbot = () => {
   const [messages, setMessages] = useState<Array<Message>>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [specialNeeds, setSpecialNeeds] = useState<SpecialNeeds>({
+    needsEV: false,
+    needsAccessible: false,
+    needsCloserToElevator: false
+  });
   
   // Add ref to track initialization
   const hasInitialized = React.useRef(false);
@@ -162,7 +174,21 @@ export const Chatbot = () => {
 
       await createConversation(eventUser.id, 'user', userMessage);
 
-      const { message: botResponse } = await getSmartBotResponse(eventUser.id, userMessage);
+      const { message: botResponse, recommendation } = await getSmartBotResponse(eventUser.id, userMessage, specialNeeds);
+
+      console.log('!!!!! ~~~~~ recommendation', recommendation);
+      
+      // Store parking recommendation if it exists
+      if (recommendation) {
+        dispatch(setParkingRecommendation({
+          location: recommendation.location,
+          elevator: recommendation.elevator,
+          spots: recommendation.spots,
+          color: recommendation.color,
+          zone: recommendation.zone,
+          showMapNotification: true
+        }));
+      }
       
       if (botResponse.includes('view interactive map')) {
         dispatch(setShowMapNotification(true));

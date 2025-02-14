@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import axios from 'axios';
 import { messageTemplates } from '../utils/messageTemplates';
 import { getParkingRecommendation } from '../utils/parkingRecommendation';
-// import { findBestParking, ParkingGraph, ParkingPreferences } from '../utils/parkingRecommendation';
+import OpenAI from 'openai';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -85,46 +85,101 @@ router.post('/smart-response', async (req, res) => {
     // Get conversation history
     const conversationHistory = await prisma.conversation.findMany({
       where: { eventUserId },
-      orderBy: { createdAt: 'asc' },
-      take: 10,
-    });
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+    }).then(messages => messages.reverse()); // Reverse to maintain chronological order
+    
 
-    // Format conversation history for Groq
-    const formattedHistory: ChatMessage[] = conversationHistory.map(msg => ({
-      role: msg.sender === 'user' ? 'user' : 'assistant',
-      content: msg.message,
-    }));
-
-    // Before getting recommendation, extract special needs from conversation
     const specialNeeds = {
-      needsEV: conversationHistory.some(msg => msg.message.toLowerCase().includes('ev charging')),
-      needsAccessible: conversationHistory.some(msg => 
-        msg.message.toLowerCase().includes('accessibility') || 
-        msg.message.toLowerCase().includes('wheelchair')),
-      needsCloserToElevator: conversationHistory.some(msg => 
-        msg.message.toLowerCase().includes('injuries') || 
-        msg.message.toLowerCase().includes('pregnancy'))
+      needsEV: false,
+      needsAccessible: false,
+      needsCloserToElevator: false
     };
 
-    const recommendation = await getParkingRecommendation(
-      event.meetingBuilding,
-      specialNeeds
-    );
+    // Convert current message to lowercase for easier checking
+    const currentMessageLower = message.toLowerCase();
 
+    // Check if any of the last 5 messages contains the trigger phrase
+    const hasSpecialNeedsSummary = conversationHistory.some((msg, index) => {
+      if (msg.sender === 'bot' && 
+          msg.message.toLowerCase().includes("here's your summarized special needs:")) {
+        // Check if there's a "yes" response in the next message
+        const nextMsg = conversationHistory[index + 1];
+        return !(nextMsg && nextMsg.sender === 'user' && 
+                 nextMsg.message.toLowerCase() === 'yes');
+      }
+      return false;
+    });
+
+    // Check for EV needs in current message
+    const hasEVKeywords = 
+      currentMessageLower.includes('ev') ||
+      currentMessageLower.includes('electric vehicle') ||
+      currentMessageLower.includes('ev charging') ||
+      currentMessageLower.includes('charging station') ||
+      currentMessageLower.includes('i drive ev');
+
+    // Set EV flag if keywords are found
+    if (hasEVKeywords) {
+      specialNeeds.needsEV = true;
+    }
+
+    // Check for accessibility needs
+    if (
+      currentMessageLower.includes('wheelchair') ||
+      currentMessageLower.includes('disabled') ||
+      currentMessageLower.includes('accessibility')
+    ) {
+      specialNeeds.needsAccessible = true;
+    }
+
+    // Check for elevator proximity needs
+    if (
+      currentMessageLower.includes('elevator') ||
+      currentMessageLower.includes('close to entrance')
+    ) {
+      specialNeeds.needsCloserToElevator = true;
+    }
+
+    // Unset special needs if user indicates no requirements
+    if (
+      currentMessageLower.includes("don't need") || 
+      currentMessageLower.includes("no needs") ||
+      currentMessageLower.includes("no special requirements")
+    ) {
+      specialNeeds.needsEV = false;
+      specialNeeds.needsAccessible = false;
+      specialNeeds.needsCloserToElevator = false;
+    }
+
+    console.log('------------------------------------------');
+    console.log(hasSpecialNeedsSummary, hasEVKeywords, specialNeeds.needsAccessible, specialNeeds.needsCloserToElevator);
+    console.log('------------------------------------------');
+    let parkingRecommendation;
+    // Get recommendation if we're in special needs context or user mentioned specific needs
+    if (hasSpecialNeedsSummary || hasEVKeywords || specialNeeds.needsAccessible || specialNeeds.needsCloserToElevator ||
+      currentMessageLower.includes("don't need") || 
+      currentMessageLower.includes("no needs") ||
+      currentMessageLower.includes("no special requirements")) {
+      console.log(specialNeeds);
+      parkingRecommendation = await getParkingRecommendation(
+        event.meetingBuilding,
+        specialNeeds
+      );
+      console.log('Parking recommendation triggered:', parkingRecommendation);
+    }
+
+    // Add the recommendation to the templates object that's passed in the initial greeting
     const messages = [
-      messageTemplates.initialGreeting(user, event, recommendation),
-      ...formattedHistory,
+      messageTemplates.initialGreeting(user, event, parkingRecommendation),
+      ...conversationHistory.map(msg => ({
+        role: msg.sender === 'user' ? 'user' : 'assistant',
+        content: msg.message.replace('-----', '') // Clean up any placeholder dashes
+      })),
       { role: 'user', content: message }
     ];
 
-    // Add logging to debug the request
-    console.log('Sending request to Groq API:', JSON.stringify({
-      messages,
-      model: "llama-3.3-70b-versatile",
-      temperature: 0.7,
-      max_tokens: 150,
-      stream: false
-    }, null, 2));
+    console.log('********************************* 1. messages', messages);
 
     const response = await axios.post(API_URL, {
       messages,
@@ -139,58 +194,31 @@ router.post('/smart-response', async (req, res) => {
       }
     });
 
+
+    console.log('********************************* 2. response', response.data.choices[0]?.message?.content);
+
     const aiMessage = response.data.choices[0]?.message?.content || '';
     
-    // Force the correct template only in specific scenarios
-    // let finalMessage = aiMessage;
+    // If the message contains the final recommendation template, replace placeholders with actual values
+    let processedMessage = aiMessage;
+    if (parkingRecommendation && aiMessage.includes('Park in P1')) {
+      processedMessage = aiMessage
+        .replace('P1 -----', `P1 ${parkingRecommendation.location || ''}`)
+        .replace('----- elevator', `${parkingRecommendation.elevator || ''} elevator`)
+        .replace('----- spots', `${parkingRecommendation.spots || ''} spots`);
+    }
 
-    // Only force templates in very specific cases
-    // if ((aiMessage.toLowerCase().includes('provide your license plate') || 
-    //      aiMessage.toLowerCase().includes('register your vehicle')) && 
-    //     !aiMessage.toLowerCase().includes('already have your')) {
-    //   finalMessage = messageTemplates.carRegistration(user, event).content;
-    // } 
-    // else if ((aiMessage.toLowerCase().includes('customized cards for visualization')) && 
-    // (aiMessage.toLowerCase().includes('your final parking details') ||
-    //          aiMessage.toLowerCase().includes('here is your final parking details') || 
-    //          aiMessage.toLowerCase().includes('view interactive map'))) {
-    //   finalMessage = messageTemplates.finalRecommendation(user, event).content;
-    // }
-    // else if (aiMessage.toLowerCase().includes('contact the event organizer') || 
-    //          aiMessage.toLowerCase().includes('meeting information incorrect')) {
-    //   finalMessage = messageTemplates.contactAdmin(user, event).content;
-    // }
-    // // For special needs responses, combine AI response with template
-    // else if (aiMessage.toLowerCase().includes('parking') && 
-    //          aiMessage.toLowerCase().includes('recommend') &&
-    //          (aiMessage.toLowerCase().includes('pregnant') || 
-    //           aiMessage.toLowerCase().includes('injury') || 
-    //           aiMessage.toLowerCase().includes('accessibility'))) {
-    //   // Extract first sentence using regex only for special needs acknowledgment
-    //   const firstSentence = aiMessage.match(/^[^.!?]+[.!?]/)?.[0] || aiMessage;
-    //   finalMessage = `${firstSentence}\n\n${messageTemplates.finalRecommendation(user, event).content}`;
-    // }
-    // // Keep original AI response for all other cases
-    // else {
-    //   finalMessage = aiMessage;
-    // }
-    
-    console.log('AI Response:', aiMessage);
-    // console.log('Final Message after template check:', finalMessage);
-
-    // Store the bot's response with the forced template
+    // Store the bot's response with the processed message
     await prisma.conversation.create({
       data: {
         conversationId: eventUserId,
         eventUserId,
         sender: 'bot',
-        // message: finalMessage,
-        message: aiMessage,
+        message: processedMessage,
       },
     });
 
-    // res.json({ message: finalMessage });
-    res.json({ message: aiMessage });
+    res.json({ message: processedMessage, recommendation: parkingRecommendation });
   } catch (error: any) {
     console.error('Smart response error:', error);
     res.status(500).json({ 
@@ -276,81 +304,5 @@ router.post('/register-plate', async (req, res) => {
     res.status(500).json({ error: 'Failed to register car plate' });
   }
 });
-
-// router.post('/recommend-parking', async (req, res) => {
-//   try {
-//     const { 
-//       eventUserId,
-//       entranceId,
-//       preferences
-//     }: {
-//       eventUserId: string;
-//       entranceId: string;
-//       preferences: ParkingPreferences;
-//     } = req.body;
-
-//     // Get event details to load correct parking graph
-//     const eventUser = await prisma.eventUser.findUnique({
-//       where: { id: eventUserId },
-//       include: { event: true }
-//     });
-
-//     if (!eventUser || !eventUser.event) {
-//       throw new Error('Event user or event not found');
-//     }
-
-//     // In the future, this would come from your database based on the event
-//     const parkingGraph: ParkingGraph = {
-//       nodes: [
-//         // Example nodes - in production, load from database
-//         {
-//           id: 'entrance1',
-//           type: 'entrance',
-//           coordinates: { x: 0, y: 0, z: 0 }
-//         },
-//         {
-//           id: 'parking1',
-//           type: 'parking',
-//           coordinates: { x: 10, y: 10, z: 0 },
-//           features: {
-//             isEV: true,
-//             nearElevator: true
-//           }
-//         }
-//         // ... more nodes
-//       ],
-//       edges: [
-//         // Example edges - in production, load from database
-//         {
-//           from: 'entrance1',
-//           to: 'parking1',
-//           weight: 10
-//         }
-//         // ... more edges
-//       ]
-//     };
-
-//     const recommendation = findBestParking(parkingGraph, entranceId, preferences);
-
-//     // Store the recommendation in the conversation
-//     await prisma.conversation.create({
-//       data: {
-//         conversationId: eventUserId,
-//         eventUserId,
-//         sender: 'bot',
-//         message: `I've found the perfect parking spot for you! Follow this path: ${recommendation.path.join(' → ')}`,
-//       },
-//     });
-
-//     res.json({
-//       success: true,
-//       recommendation
-//     });
-
-//   } catch (error) {
-//     console.error('Error generating parking recommendation:', error);
-//     res.status(500).json({ error: 'Failed to generate parking recommendation' });
-//   }
-// });
 
 export default router; 

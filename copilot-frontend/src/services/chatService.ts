@@ -8,6 +8,12 @@ interface ConversationMessage {
   createdAt: string | Date;
 }
 
+interface SpecialNeeds {
+  needsEV: boolean;
+  needsAccessible: boolean;
+  needsCloserToElevator: boolean;
+}
+
 export const initializeChatSession = async (userData: any, eventData: any, eventUserId: string, dispatch: any) => {
   // First try to load existing conversation history
   try {
@@ -39,10 +45,9 @@ export const initializeChatSession = async (userData: any, eventData: any, event
   }];
 };
 
-export const processUserMessage = async (eventUserId: string, message: string) => {
+export const processUserMessage = async (eventUserId: string, message: string, specialNeeds: SpecialNeeds) => {
   try {
-    // Get bot's response - the backend already stores it in /smart-response
-    const response = await getSmartBotResponse(eventUserId, message);
+    const response = await getSmartBotResponse(eventUserId, message, specialNeeds);
     
     return {
       text: response.message,

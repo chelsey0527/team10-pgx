@@ -7,17 +7,18 @@ export const mapConfigs: Record<string, MapConfig> = {
     markers: [
       {
         id: 'entrance-1',
-        x: 45, // percentage from left
-        y: 65, // percentage from top
+        x: 58,
+        y: 28,
         type: 'entrance',
-        tooltip: 'Main Entrance'
+        tooltip: '156th Entrance'
       },
       {
         id: 'parking-1',
-        x: 55,
+        x: 40,
         y: 44,
         type: 'parking',
-        tooltip: 'Recommended Parking Area'
+        tooltip: 'Parking Area',
+        image: mapDemoActual,
       }
     ]
   },
@@ -26,15 +27,15 @@ export const mapConfigs: Record<string, MapConfig> = {
     markers: [
       {
         id: 'entrance-1',
-        x: 100,
-        y: 49,
+        x: 58,
+        y: 26,
         type: 'entrance',
-        tooltip: 'West Entrance'
+        tooltip: '159th Entrance'
       },
       {
         id: 'parking-1',
-        x: 65,
-        y: 45,
+        x: 140,
+        y: 52,
         type: 'parking',
         tooltip: 'Parking Area',
         image: mapDemoActual,

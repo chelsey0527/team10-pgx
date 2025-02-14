@@ -3,19 +3,17 @@ import { MapMarker as MapMarkerType } from '../types/map';
 
 interface Props {
   marker: MapMarkerType;
+  selectedLevel: string;
 }
 
-const MapMarker: React.FC<Props> = ({ marker }) => {
+const MapMarker: React.FC<Props> = ({ marker, selectedLevel }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const bubbleRef = useRef<HTMLDivElement>(null);
 
-  // Handle click outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      // Check if click is on the expanded bubble or its children
       if (bubbleRef.current && 
           !bubbleRef.current.contains(event.target as Node) && 
-          // Only check if click target is not the bubble trigger itself
           !(event.target as Element).closest('.bubble-trigger')) {
         setIsExpanded(false);
       }
@@ -29,6 +27,10 @@ const MapMarker: React.FC<Props> = ({ marker }) => {
       document.removeEventListener('mousedown', handleClickOutside, true);
     };
   }, [isExpanded]);
+
+  if (selectedLevel !== 'P1') {
+    return null;
+  }
 
   return (
     <div
@@ -83,7 +85,7 @@ const MapMarker: React.FC<Props> = ({ marker }) => {
             {isExpanded && (
               <div 
                 ref={bubbleRef}
-                className="absolute bottom-[100%] left-1/2 transform -translate-x-1/2 mb-4 bg-[#fbe7d7] rounded-lg shadow-lg p-4 w-[300px] clickable z-50"
+                className="absolute bottom-[100%] left-1/2 transform -translate-x-1/2 mb-4 bg-[#fbe7d7] rounded-lg shadow-lg p-4 w-[200px] clickable z-50"
               >
                 {/* Close button */}
                 <button 
@@ -109,16 +111,16 @@ const MapMarker: React.FC<Props> = ({ marker }) => {
                   </svg>
                 </button>
 
-                <div className="flex flex-col gap-2">
-                  <div className="text-lg font-semibold">{marker.tooltip}</div>
-                  <div className="text-sm">
+                <div className="flex flex-col gap-1">
+                  <div className="text-md font-semibold">{marker.tooltip}</div>
+                  <div className="text-xs">
                     Available spots: 45/100
                   </div>
                   {marker.image && (
                     <img 
                       src={marker.image} 
                       alt={`${marker.tooltip} parking`}
-                      className="w-full h-40 object-cover"
+                      className="w-full h-20 object-cover"
                     />
                   )}
                 </div>

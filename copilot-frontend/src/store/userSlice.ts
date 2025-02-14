@@ -11,12 +11,18 @@ interface User {
   carColor?: string;
   carMake?: string;
   carState?: string;
-  specialNeeds?: {
-    needsEV?: boolean;
-    needsAccessible?: boolean;
-    needsCloserToElevator?: boolean;
+  specialNeeds: {
+    needsEV: boolean;
+    needsAccessible: boolean;
+    needsCloserToElevator: boolean;
   };
   // ... other fields
+}
+
+interface SpecialNeeds {
+  needsEV: boolean;
+  needsAccessible: boolean;
+  needsCloserToElevator: boolean;
 }
 
 interface UserState {
@@ -27,7 +33,17 @@ interface UserState {
 }
 
 const initialState: UserState = {
-  user: null,
+  user: {
+    id: '',
+    email: '',
+    firstName: '',
+    lastName: '',
+    specialNeeds: {
+      needsEV: false,
+      needsAccessible: false,
+      needsCloserToElevator: false
+    }
+  } as User,
   loading: false,
   error: null,
   isAuthenticated: false
@@ -45,9 +61,12 @@ const userSlice = createSlice({
       state.user = null;
       state.isAuthenticated = false;
     },
-    updateSpecialNeeds: (state, action: PayloadAction<User['specialNeeds']>) => {
+    updateSpecialNeeds: (state, action: PayloadAction<SpecialNeeds>) => {
       if (state.user) {
-        state.user.specialNeeds = action.payload;
+        state.user.specialNeeds = {
+          ...state.user.specialNeeds,
+          ...action.payload,
+        };
       }
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
@@ -90,6 +109,21 @@ export const setUserVehicleInfo = createAsyncThunk(
     } catch (error) {
       throw error;
     }
+  }
+);
+
+export const setUserAsync = createAsyncThunk(
+  'user/setUser',
+  async (userData: Partial<User>) => {
+    return {
+      ...userData,
+      specialNeeds: {
+        needsEV: false,
+        needsAccessible: false,
+        needsCloserToElevator: false,
+        ...userData.specialNeeds
+      }
+    };
   }
 );
 
