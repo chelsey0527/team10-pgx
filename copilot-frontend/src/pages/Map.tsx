@@ -55,7 +55,8 @@ const Map = () => {
 
     // Convert stallNumber to integer and compare
     const stallNum = parseInt(recommendedParking.stallNumber?.toString() || '132');
-    return stallNum === 132 ? generalBlueB132 : generalBlueB110;
+    // return stallNum === 132 ? generalBlueB132 : generalBlueB110;
+    return generalBlueB110;
   };
 
   // Function to get detailed map image
@@ -120,7 +121,8 @@ const Map = () => {
     }
     
     const stallNum = parseInt(recommendedParking.stallNumber?.toString() || '132');
-    return stallNum === 132 ?mapConfigs['general-blue-b132'] : mapConfigs['general-blue-b110'];
+    // return stallNum === 132 ?mapConfigs['general-blue-b132'] : mapConfigs['general-blue-b110'];
+    return mapConfigs['general-blue-b110'];
   };
 
   const [selectedLevel, setSelectedLevel] = useState('P1');
