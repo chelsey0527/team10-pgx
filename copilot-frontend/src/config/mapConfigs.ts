@@ -1,5 +1,7 @@
 import { MapConfig } from '../types/map';
 import mapDemoActual from '../assets/map-demo-actual.png';
+import mapDemoActual2 from '../assets/map-demo-actual-2.png';
+import mapDemoActual3 from '../assets/map-demo-actual-3.png';
 
 export const mapConfigs: Record<string, MapConfig> = {
   'general-blue-b110': {
@@ -38,7 +40,7 @@ export const mapConfigs: Record<string, MapConfig> = {
         y: 52,
         type: 'parking',
         tooltip: 'Parking Area',
-        image: mapDemoActual,
+        image: mapDemoActual2,
       }
     ]
   },
@@ -58,7 +60,7 @@ export const mapConfigs: Record<string, MapConfig> = {
         y: 52,
         type: 'parking',
         tooltip: 'Parking Area',
-        image: mapDemoActual,
+        image: mapDemoActual3,
       }
     ]
   }
