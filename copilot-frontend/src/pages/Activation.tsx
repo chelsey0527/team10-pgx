@@ -30,7 +30,7 @@ const verifyAndStoreData = (code: string) => async (dispatch: AppDispatch) => {
   }
 };
 
-const Registration = () => {
+const Activation = () => {
   const [activationCode, setActivationCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -45,7 +45,7 @@ const Registration = () => {
     const result = await dispatch(verifyAndStoreData(activationCode));
     
     if (result?.success) {
-      navigate('/chatbot');
+      navigate('/landing');
     } else {
       setError('Invalid activation code. Please try again.');
     }
@@ -115,4 +115,4 @@ const Registration = () => {
   );
 };
 
-export default Registration;
+export default Activation;
