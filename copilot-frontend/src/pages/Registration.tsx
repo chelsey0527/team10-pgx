@@ -1,10 +1,11 @@
-import React, { useState, FormEvent } from "react";
+import React, { useState} from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '../store/store';
 import { verifyActivationCode } from '../services/api';
 import { setUser } from '../store/userSlice';
 import { setEvent, setEventUser, setActivationCode } from '../store/activationSlice';
+import activationImage from '../assets/activation.png';
 
 
 // Create an async action creator
@@ -53,22 +54,22 @@ const Registration = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen min-w-[375px] bg-gradient-to-br from-[#e9e9e9] to-[#ffffff] p-10">
-      <div className="flex flex-col justify-center flex-grow md:items-center">
-        <div className="md:w-[600px] w-full">
+    <div className="flex flex-col min-h-screen min-w-[375px] bg-gradient-to-b from-[#FCF9F6] to-[#f3e6d8]">
+      <div className="flex flex-col justify-center flex-grow md:items-center p-10">
+        <div className="md:w-[600px] w-full pt-10">
           {/* Logo */}
           <div className="mb-8 self-start">
-            <img src="/copilot-logo.png" alt="Copilot Logo" className="w-16 h-16" />
+            <img src="/copilot-logo-colored.png" alt="Copilot Logo" className="w-16 h-16" />
           </div>
 
           {/* Title */}
-          <h1 className="text-4xl font-['ABC_Ginto'] mb-2 text-left">
+          <h1 className="text-3xl font-['ABC_Ginto'] text-left">
             Hi, I'm Copilot, your <br/> AI companion.
           </h1>
 
           {/* Code Input Section */}
-          <div className="w-full max-w-md mt-20">
-            <h2 className="text-gray-500 text-xl font-['ABC_Ginto'] mb-6 text-center">
+          <div className="w-full max-w-md mt-16">
+            <h2 className="text-gray-500 text-md font-['ABC_Ginto'] mb-6 text-center">
               Enter One-time Code here
             </h2>
             
@@ -79,7 +80,7 @@ const Registration = () => {
                     key={index}
                     type="text"
                     maxLength={1}
-                    className="w-10 h-12 text-center text-2xl font-medium border rounded-lg bg-[#D9D9D9]"
+                    className="w-10 h-12 text-center text-2xl font-medium border border-[#a1a1a1] rounded-lg bg-transparent"
                     value={activationCode[index] || ''}
                     onChange={(e) => {
                       const newCode = activationCode.split('');
@@ -93,16 +94,23 @@ const Registration = () => {
               
               <button
                 type="submit"
-                className="w-full max-w-xs py-3 rounded-full bg-[#D9D9D9] text-black mt-20"
+                className="w-full max-w-xs py-3 rounded-full bg-black text-white mt-10"
                 disabled={loading}
               >
-                {loading ? 'Verifying...' : 'Verify'}
+                {loading ? 'Entering...' : 'Enter'}
               </button>
+              
+              
             </form>
             {error && <div className="error text-center">{error}</div>}
           </div>
         </div>
       </div>
+      <img 
+        src={activationImage}
+        alt="Activation" 
+        className="w-full"
+      />
     </div>
   );
 };

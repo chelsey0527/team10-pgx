@@ -13,7 +13,7 @@ const AppContent = () => {
   const showNavigation = location.pathname !== '/';
 
   return (
-    <div className="h-screen ">
+    <div className="h-screen font-['ABC_Ginto']">
       <Routes>
         <Route path="/" element={<Registration />} />
         <Route path="/chatbot" element={<Chatbot />} />
