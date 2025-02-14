@@ -157,7 +157,11 @@ router.post('/smart-response', async (req, res) => {
     console.log('------------------------------------------');
     let parkingRecommendation;
     // Get recommendation if we're in special needs context or user mentioned specific needs
-    if (hasSpecialNeedsSummary || hasEVKeywords || specialNeeds.needsAccessible || specialNeeds.needsCloserToElevator) {
+    if (hasSpecialNeedsSummary || hasEVKeywords || specialNeeds.needsAccessible || specialNeeds.needsCloserToElevator ||
+      currentMessageLower.includes("don't need") || 
+      currentMessageLower.includes("no needs") ||
+      currentMessageLower.includes("no special requirements")) {
+      console.log(specialNeeds);
       parkingRecommendation = await getParkingRecommendation(
         event.meetingBuilding,
         specialNeeds
