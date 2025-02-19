@@ -117,6 +117,7 @@ model Garage {
   color              String   // blue, orange, green
   zone               String   // A, B, C, D
   spots              Int      // number of parking spots
+  stallNumber        String?  // stall number
   elevator1          String   // North, West, East, South
   elevatorBuilding1  String   // building numbers served by elevator1
   weight1            Int      // priority weight for elevator1

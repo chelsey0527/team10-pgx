@@ -1,13 +1,13 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 interface ParkingRecommendation {
-  location: string;
-  elevator: string;
-  spots: number;
-  color: string;
-  zone: string;
-  showMapNotification: boolean;
-  // Add any additional fields that come from getParkingRecommendation
+  location?: string;
+  elevator?: string;
+  spots?: number;
+  stallNumber?: string;
+  color?: string;
+  zone?: string;
+  showMapNotification?: boolean;
 }
 
 interface ParkingState {
@@ -16,8 +16,7 @@ interface ParkingState {
 }
 
 const initialState: ParkingState = {
-  recommendation: null,
-  lastUpdated: null,
+  recommendation: null
 };
 
 const parkingSlice = createSlice({
@@ -26,14 +25,13 @@ const parkingSlice = createSlice({
   reducers: {
     setParkingRecommendation: (state, action: PayloadAction<ParkingRecommendation>) => {
       state.recommendation = action.payload;
-      state.lastUpdated = new Date();
     },
     clearParkingRecommendation: (state) => {
       state.recommendation = null;
-      state.lastUpdated = null;
-    },
-  },
+    }
+  }
 });
 
+export const { setParkingRecommendation, clearParkingRecommendation } = parkingSlice.actions;
 export const { setParkingRecommendation, clearParkingRecommendation } = parkingSlice.actions;
 export default parkingSlice.reducer; 

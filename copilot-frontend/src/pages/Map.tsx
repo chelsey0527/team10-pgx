@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import mapDemo from '../assets/map-demo.png';
-import generalBlueB1 from '../assets/general-blue-b-1.png';
+import generalBlueB110 from '../assets/general-blue-b-110.png';
+import generalBlueB132 from '../assets/general-blue-b-132.png';
 import evOrangeB1 from '../assets/ev-orange-b-1.png';
+import floor2 from '../assets/floor-2.png';
 import floor2 from '../assets/floor-2.png';
 import { setParkingRecommendation } from '../store/parkingSlice';
 import { RootState } from '../store/store';
@@ -10,7 +12,7 @@ import Draggable from 'react-draggable';
 import { mapConfigs } from '../config/mapConfigs';
 import MapMarker from '../components/MapMarker';
 import voiceIcon from '../assets/icon/Voice.png';
-// import { getParkingRecommendation } from '../services/api';
+import WebSocketService from '../services/websocketService';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3001';
 const GROQ_API_KEY = process.env.REACT_APP_API_KEY;
@@ -22,7 +24,7 @@ const Map = () => {
   
   // Convert state to refs for values that don't need re-renders
   // const lastUpdateTimeRef = useRef(0);
-  const parkingSpotsRef = useRef({ p1: 36, p2: 23 });
+  const [parkingSpots, setParkingSpots] = useState({ p1: 20, p2: 20 });
 
   // Update the selector to use typed state
   const userNeeds = useSelector((state: RootState) => 
@@ -43,16 +45,23 @@ const Map = () => {
       return floor2;
     }
 
+    if (selectedLevel === 'P2') {
+      return floor2;
+    }
+
     if (!recommendedParking) return mapDemo;
 
     const color = recommendedParking.color?.toLowerCase() || '';
     const zone = recommendedParking.zone?.toLowerCase() || '';
 
     if (color === 'orange' && zone === 'b') {
+    if (color === 'orange' && zone === 'b') {
       return evOrangeB1;
     }
 
-    return generalBlueB1;
+    // Convert stallNumber to integer and compare
+    const stallNum = parseInt(recommendedParking.stallNumber?.toString() || '132');
+    return stallNum === 132 ? generalBlueB132 : generalBlueB110;
   };
 
   // Function to get detailed map image
@@ -69,7 +78,7 @@ const Map = () => {
       return evOrangeB1;
     }
 
-    return generalBlueB1;
+    return generalBlueB110;
   };
 
 
@@ -107,7 +116,7 @@ const Map = () => {
 
   // Function to get current map config
   const getCurrentMapConfig = () => {
-    if (!recommendedParking) return mapConfigs['general-blue-b1'];
+    if (!recommendedParking) return mapConfigs['general-blue-b110'];
     
     const color = recommendedParking.color?.toLowerCase() || '';
     const zone = recommendedParking.zone?.toLowerCase() || '';
@@ -116,7 +125,8 @@ const Map = () => {
       return mapConfigs['ev-orange-b1'];
     }
     
-    return mapConfigs['general-blue-b1'];
+    const stallNum = parseInt(recommendedParking.stallNumber?.toString() || '132');
+    return stallNum === 132 ?mapConfigs['general-blue-b132'] : mapConfigs['general-blue-b110'];
   };
 
   const [selectedLevel, setSelectedLevel] = useState('P1');
@@ -126,23 +136,112 @@ const Map = () => {
     setSelectedLevel(level);
   };
 
+  // Get parking recommendation from Redux at component level
+  const parkingRecommendation = useSelector((state: RootState) => state.parking?.recommendation);
+
+  // Modified useEffect to use the parkingRecommendation from props
+  useEffect(() => {
+    if (!parkingRecommendation) {
+      const initialParkingData = {
+        location: "blue Zone B",
+        elevator: "North",
+        spots: 5,
+        stallNumber: "132",
+        color: "blue",
+        zone: "B",
+        showMapNotification: true
+      };
+      
+      dispatch(setParkingRecommendation(initialParkingData));
+    }
+  }, [parkingRecommendation, dispatch]); // Add dependencies
+
+  // Function to get available spots for a marker
+  const getAvailableSpots = (markerTooltip: string) => {
+    if (!parkingRecommendation) return 5;
+    
+    const isRecommendedSpot = 
+      markerTooltip.toLowerCase().includes(parkingRecommendation.color?.toLowerCase() || '') &&
+      markerTooltip.toLowerCase().includes(parkingRecommendation.zone?.toLowerCase() || '');
+
+    if (isRecommendedSpot) {
+      return parkingRecommendation.spots || 5;
+    }
+    
+    return 5;
+  };
+
+  // Add new state for last update time
+  const [lastUpdateTime, setLastUpdateTime] = useState<Date>(new Date());
+
+  // Update the WebSocket effect to include timestamp updates
+  useEffect(() => {
+    const wsService = WebSocketService.getInstance();
+    
+    // Initial connection
+    const unsubscribe = wsService.subscribe((message) => {
+      setParkingSpots(prev => ({
+        p1: message,
+        p2: prev.p2
+      }));
+      setLastUpdateTime(new Date());
+    });
+
+    // Set up polling interval for every minute
+    const pollInterval = setInterval(() => {
+      wsService.reconnect(); // Reconnect to get fresh data
+    }, 60000); // 60000ms = 1 minute
+
+    return () => {
+      unsubscribe();
+      clearInterval(pollInterval);
+    };
+  }, []);
+
+  // Update the time display refresh interval to be more efficient
+  useEffect(() => {
+    const timer = setInterval(() => {
+      // Force re-render to update the time display
+      setLastUpdateTime(prev => new Date(prev.getTime()));
+    }, 10000); // Update every 10 seconds instead of every second
+
+    return () => clearInterval(timer);
+  }, []);
+
+  // Update the time formatting function to be more precise
+  const getTimeSinceLastUpdate = () => {
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - lastUpdateTime.getTime()) / 1000);
+    
+    if (diffInSeconds < 60) {
+      return 'a minute';
+    } else if (diffInSeconds < 3600) {
+      const minutes = Math.floor(diffInSeconds / 60);
+      return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`;
+    } else {
+      const hours = Math.floor(diffInSeconds / 3600);
+      return `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+    }
+  };
+
   return (
+    <div className="flex flex-col h-[calc(100vh-5rem)] bg-white pt-10 pb-2">
     <div className="flex flex-col h-[calc(100vh-5rem)] bg-white pt-10 pb-2">
       <span className="text-lg mb-4 font-bold px-8">Visitor Parking Spots Available </span>
       <span className="text-sm text-gray-500 mb-6 px-8">
-        Last update: {'30 secs'} ago
+        Last update: {getTimeSinceLastUpdate()} ago
       </span>
       
       {/* Parking spot counters */}
       <div className="flex gap-4 mb-2 px-8">
         <div className="flex-1 max-w-[200px] bg-white rounded-xl shadow-md flex items-center h-12">
           <div className="flex items-center justify-center text-[#BE8544] text-lg bg-[#fbe7d7] rounded-xl h-full w-10">P1</div>
-          <div className="text-xl font-medium flex-1 text-center">{parkingSpotsRef.current.p1}</div>
+          <div className="text-xl font-medium flex-1 text-center">{parkingSpots.p1}</div>
         </div>
         
         <div className="flex-1 max-w-[200px] bg-white rounded-xl shadow-md flex items-center h-12">
           <div className="flex items-center justify-center text-[#BE8544] text-lg bg-[#fbe7d7] rounded-xl h-full w-10">P2</div>
-          <div className="text-xl font-medium  flex-1 text-center">{parkingSpotsRef.current.p2}</div>
+          <div className="text-xl font-medium flex-1 text-center">{parkingSpots.p2}</div>
         </div>
       </div>
       
@@ -159,7 +258,12 @@ const Map = () => {
               src={getMapImage()}
               alt="Parking Map" 
               className="max-w-[200%] h-auto pt-[100px] transition-opacity duration-300 ease-in-out"
+              className="max-w-[200%] h-auto pt-[100px] transition-opacity duration-300 ease-in-out"
               draggable={false}
+              style={{
+                opacity: isImageLoading ? 0 : 1
+              }}
+              onLoad={() => setIsImageLoading(false)}
               style={{
                 opacity: isImageLoading ? 0 : 1
               }}
@@ -170,6 +274,7 @@ const Map = () => {
                 key={marker.id} 
                 marker={marker} 
                 selectedLevel={selectedLevel}
+                availableSpots={getAvailableSpots(marker.tooltip)}
               />
             ))}
           </div>
@@ -178,6 +283,7 @@ const Map = () => {
         {/* Add the vertical level selector */}
         <div className="absolute left-4 bottom-4 flex flex-col py-2 gap-1 bg-[#F7F7F7] rounded-xl overflow-hidden">
           {['P1', 'P2'].map((level) => (
+          {['P1', 'P2'].map((level) => (
             <button
               key={level}
               onClick={() => {
@@ -185,8 +291,13 @@ const Map = () => {
                 handleLevelSelect(level);
               }}
               className={`px-4 py-2 text-sm transition-all duration-300 ${
+              onClick={() => {
+                setIsImageLoading(true);
+                handleLevelSelect(level);
+              }}
+              className={`px-4 py-2 text-sm transition-all duration-300 ${
                 selectedLevel === level
-                  ? 'text-black font-bold bg-white'
+                  ? 'text-black font-bold'
                   : 'text-gray-400 hover:bg-gray-100'
               }`}
             >
@@ -197,6 +308,7 @@ const Map = () => {
 
         {/* Add Voice Mode button */}
         <div className="absolute right-4 bottom-2 opacity-90">
+          <div className="flex items-center gap-2 bg-[#F7F7F7] rounded-xl px-4 py-3">
           <div className="flex items-center gap-2 bg-[#F7F7F7] rounded-xl px-4 py-3">
             <img src={voiceIcon} alt="Voice Mode" className="w-5 h-5" />
             <span className="text-sm text-gray-600">Voice Mode</span>
@@ -234,6 +346,7 @@ const Map = () => {
                     key={marker.id} 
                     marker={marker} 
                     selectedLevel={selectedLevel}
+                    availableSpots={getAvailableSpots(marker.tooltip)}
                   />
                 ))}
               </div>

@@ -17,6 +17,13 @@ interface SpecialNeeds {
   needsAccessible: boolean;
   needsCloserToElevator: boolean;
 }
+import { setParkingRecommendation } from '../store/parkingSlice';
+
+interface SpecialNeeds {
+  needsEV: boolean;
+  needsAccessible: boolean;
+  needsCloserToElevator: boolean;
+}
 
 const formatMessage = (msg: any): Message => ({
   text: msg.message,
@@ -184,6 +191,7 @@ export const Chatbot = () => {
           location: recommendation.location,
           elevator: recommendation.elevator,
           spots: recommendation.spots,
+          stallNumber: recommendation.stallNumber,
           color: recommendation.color,
           zone: recommendation.zone,
           showMapNotification: true

@@ -3,7 +3,6 @@ import { PrismaClient } from '@prisma/client';
 import axios from 'axios';
 import { messageTemplates } from '../utils/messageTemplates';
 import { getParkingRecommendation } from '../utils/parkingRecommendation';
-import OpenAI from 'openai';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -90,7 +89,89 @@ router.post('/smart-response', async (req, res) => {
     }).then(messages => messages.reverse()); // Reverse to maintain chronological order
     
 
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+    }).then(messages => messages.reverse()); // Reverse to maintain chronological order
+    
+
     const specialNeeds = {
+      needsEV: false,
+      needsAccessible: false,
+      needsCloserToElevator: false
+    };
+
+    // Convert current message to lowercase for easier checking
+    const currentMessageLower = message.toLowerCase();
+
+    // Check if any of the last 5 messages contains the trigger phrase
+    const hasSpecialNeedsSummary = conversationHistory.some((msg, index) => {
+      if (msg.sender === 'bot' && 
+          msg.message.toLowerCase().includes("here's your summarized special needs:")) {
+        // Check if there's a "yes" response in the next message
+        const nextMsg = conversationHistory[index + 1];
+        return !(nextMsg && nextMsg.sender === 'user' && 
+                 nextMsg.message.toLowerCase() === 'yes');
+      }
+      return false;
+    });
+
+    // Check for EV needs in current message
+    const hasEVKeywords = 
+      currentMessageLower.includes('ev') ||
+      currentMessageLower.includes('electric vehicle') ||
+      currentMessageLower.includes('ev charging') ||
+      currentMessageLower.includes('charging station') ||
+      currentMessageLower.includes('i drive ev');
+
+    // Set EV flag if keywords are found
+    if (hasEVKeywords) {
+      specialNeeds.needsEV = true;
+    }
+
+    // Check for accessibility needs
+    if (
+      currentMessageLower.includes('wheelchair') ||
+      currentMessageLower.includes('disabled') ||
+      currentMessageLower.includes('accessibility')
+    ) {
+      specialNeeds.needsAccessible = true;
+    }
+
+    // Check for elevator proximity needs
+    if (
+      currentMessageLower.includes('elevator') ||
+      currentMessageLower.includes('close to entrance')
+    ) {
+      specialNeeds.needsCloserToElevator = true;
+    }
+
+    // Unset special needs if user indicates no requirements
+    if (
+      currentMessageLower.includes("don't need") || 
+      currentMessageLower.includes("no needs") ||
+      currentMessageLower.includes("no special requirements")
+    ) {
+      specialNeeds.needsEV = false;
+      specialNeeds.needsAccessible = false;
+      specialNeeds.needsCloserToElevator = false;
+    }
+
+    console.log('------------------------------------------');
+    console.log(hasSpecialNeedsSummary, hasEVKeywords, specialNeeds.needsAccessible, specialNeeds.needsCloserToElevator);
+    console.log('------------------------------------------');
+    let parkingRecommendation;
+    // Get recommendation if we're in special needs context or user mentioned specific needs
+    if (hasSpecialNeedsSummary || hasEVKeywords || specialNeeds.needsAccessible || specialNeeds.needsCloserToElevator ||
+      currentMessageLower.includes("don't need") || 
+      currentMessageLower.includes("no needs") ||
+      currentMessageLower.includes("no special requirements")) {
+      console.log(specialNeeds);
+      parkingRecommendation = await getParkingRecommendation(
+        event.meetingBuilding,
+        specialNeeds
+      );
+      console.log('Parking recommendation triggered:', parkingRecommendation);
+    }
       needsEV: false,
       needsAccessible: false,
       needsCloserToElevator: false
@@ -170,7 +251,13 @@ router.post('/smart-response', async (req, res) => {
     }
 
     // Add the recommendation to the templates object that's passed in the initial greeting
+    // Add the recommendation to the templates object that's passed in the initial greeting
     const messages = [
+      messageTemplates.initialGreeting(user, event, parkingRecommendation),
+      ...conversationHistory.map(msg => ({
+        role: msg.sender === 'user' ? 'user' : 'assistant',
+        content: msg.message.replace('-----', '') // Clean up any placeholder dashes
+      })),
       messageTemplates.initialGreeting(user, event, parkingRecommendation),
       ...conversationHistory.map(msg => ({
         role: msg.sender === 'user' ? 'user' : 'assistant',
@@ -179,6 +266,7 @@ router.post('/smart-response', async (req, res) => {
       { role: 'user', content: message }
     ];
 
+    console.log('********************************* 1. messages', messages);
     console.log('********************************* 1. messages', messages);
 
     const response = await axios.post(API_URL, {
@@ -197,6 +285,9 @@ router.post('/smart-response', async (req, res) => {
 
     console.log('********************************* 2. response', response.data.choices[0]?.message?.content);
 
+
+    console.log('********************************* 2. response', response.data.choices[0]?.message?.content);
+
     const aiMessage = response.data.choices[0]?.message?.content || '';
     
     // If the message contains the final recommendation template, replace placeholders with actual values
@@ -207,7 +298,16 @@ router.post('/smart-response', async (req, res) => {
         .replace('----- elevator', `${parkingRecommendation.elevator || ''} elevator`)
         .replace('----- spots', `${parkingRecommendation.spots || ''} spots`);
     }
+    // If the message contains the final recommendation template, replace placeholders with actual values
+    let processedMessage = aiMessage;
+    if (parkingRecommendation && aiMessage.includes('Park in P1')) {
+      processedMessage = aiMessage
+        .replace('P1 -----', `P1 ${parkingRecommendation.location || ''}`)
+        .replace('----- elevator', `${parkingRecommendation.elevator || ''} elevator`)
+        .replace('----- spots', `${parkingRecommendation.spots || ''} spots`);
+    }
 
+    // Store the bot's response with the processed message
     // Store the bot's response with the processed message
     await prisma.conversation.create({
       data: {
@@ -215,9 +315,11 @@ router.post('/smart-response', async (req, res) => {
         eventUserId,
         sender: 'bot',
         message: processedMessage,
+        message: processedMessage,
       },
     });
 
+    res.json({ message: processedMessage, recommendation: parkingRecommendation });
     res.json({ message: processedMessage, recommendation: parkingRecommendation });
   } catch (error: any) {
     console.error('Smart response error:', error);
