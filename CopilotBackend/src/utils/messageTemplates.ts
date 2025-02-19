@@ -25,6 +25,7 @@ export const messageTemplates = {
       }),
       
       `The sequence (from 1 to 6):`,
+      `The sequence (from 1 to 6):`,
       `1. (Already done in initial prompt) You double check meeting informations with the user. 
        - If they respond with "yes", proceed to step 2. 
        - If they respond with "no" use the "contactAdmin message TEMPLATE".
@@ -57,11 +58,24 @@ export const messageTemplates = {
           - tag: ev charging spot (if EV charging related or EV car related)
           - If they respond with "yes", proceed to step 6. 
           - If they respond with "no", proceed to step 4. 
+      `5. Briefly summarize their special needs with "Here's your summarized special needs" + "You need EV charging/Accessible" (either EV charging or Accessible based on their special needs) + "Am I understand it right?" in the message.
+          no other messages are allowed in this step.
+          The following is how we should categorize their special needs:
+          - tag: closer to elevator (if injuries, pregnancy, accessibility realted, old people, etc)
+          - tag: ev charging spot (if EV charging related or EV car related)
+          - If they respond with "yes", proceed to step 6. 
+          - If they respond with "no", proceed to step 4. 
       `,
+   
    
       
       `6. Generate final recommendation (use finalRecommendation message TEMPLATE)
        `,
+
+      'if user said want to modify their special needs you should move back to step 5 and ask for their special needs again',
+      'but if user specifically tell you "i drive ev" or "i need ev charging spot" or "no need", you should move to step 6 and generate recommendation based on their special needs',
+
+      
 
       'if user said want to modify their special needs you should move back to step 5 and ask for their special needs again',
       'but if user specifically tell you "i drive ev" or "i need ev charging spot" or "no need", you should move to step 6 and generate recommendation based on their special needs',
@@ -125,7 +139,9 @@ export const messageTemplates = {
     role: 'bot',
     content: [
       `Based on your information, we recommend you park in the East Campus Garage and enter through the East Entrance.`,
+      `Based on your information, we recommend you park in the East Campus Garage and enter through the East Entrance.`,
       '',
+      `**Visitor parking is ONLY available on P1 and P2.**`,
       `**Visitor parking is ONLY available on P1 and P2.**`,
       '',
       `For the shortest walk to your destination:`,
