@@ -130,24 +130,25 @@ const Map = () => {
     setSelectedLevel(level);
   };
 
-  // Add useEffect to initialize parking recommendation
-  useEffect(() => {
-    // Initialize with default parking data
-    const initialParkingData = {
-      location: "blue Zone B",
-      elevator: "North",
-      spots: 5,
-      stallNumber: "132",
-      color: "blue",
-      zone: "B",
-      showMapNotification: true
-    };
-    
-    dispatch(setParkingRecommendation(initialParkingData));
-  }, []); // Empty dependency array means this runs once on component mount
-
-  // Get parking recommendation from Redux
+  // Get parking recommendation from Redux at component level
   const parkingRecommendation = useSelector((state: RootState) => state.parking?.recommendation);
+
+  // Modified useEffect to use the parkingRecommendation from props
+  useEffect(() => {
+    if (!parkingRecommendation) {
+      const initialParkingData = {
+        location: "blue Zone B",
+        elevator: "North",
+        spots: 5,
+        stallNumber: "132",
+        color: "blue",
+        zone: "B",
+        showMapNotification: true
+      };
+      
+      dispatch(setParkingRecommendation(initialParkingData));
+    }
+  }, [parkingRecommendation, dispatch]); // Add dependencies
 
   // Function to get available spots for a marker
   const getAvailableSpots = (markerTooltip: string) => {
