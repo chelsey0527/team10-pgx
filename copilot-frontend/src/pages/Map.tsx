@@ -5,7 +5,6 @@ import generalBlueB110 from '../assets/general-blue-b-110.png';
 import generalBlueB132 from '../assets/general-blue-b-132.png';
 import evOrangeB1 from '../assets/ev-orange-b-1.png';
 import floor2 from '../assets/floor-2.png';
-import floor2 from '../assets/floor-2.png';
 import { setParkingRecommendation } from '../store/parkingSlice';
 import { RootState } from '../store/store';
 import Draggable from 'react-draggable';
@@ -13,9 +12,6 @@ import { mapConfigs } from '../config/mapConfigs';
 import MapMarker from '../components/MapMarker';
 import voiceIcon from '../assets/icon/Voice.png';
 import WebSocketService from '../services/websocketService';
-
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3001';
-const GROQ_API_KEY = process.env.REACT_APP_API_KEY;
 
 const Map = () => {
   const dispatch = useDispatch();
@@ -39,12 +35,11 @@ const Map = () => {
   console.log('userNeeds:', userNeeds);
   console.log('Recommended parking from Redux:', recommendedParking);
 
+  // Move this declaration to the top, before it's used
+  const [selectedLevel, setSelectedLevel] = useState('P1');
+
   // Function to determine which map to show
   const getMapImage = () => {
-    if (selectedLevel === 'P2') {
-      return floor2;
-    }
-
     if (selectedLevel === 'P2') {
       return floor2;
     }
@@ -54,7 +49,6 @@ const Map = () => {
     const color = recommendedParking.color?.toLowerCase() || '';
     const zone = recommendedParking.zone?.toLowerCase() || '';
 
-    if (color === 'orange' && zone === 'b') {
     if (color === 'orange' && zone === 'b') {
       return evOrangeB1;
     }
@@ -69,7 +63,7 @@ const Map = () => {
     if (!recommendedParking) return mapDemo;
 
     // Parse the location string to get color and zone
-    const location = recommendedParking.location?.toLowerCase() || '';
+    // const location = recommendedParking.location?.toLowerCase() || '';
     const color = recommendedParking.color?.toLowerCase() || '';
     const zone = recommendedParking.zone?.toLowerCase() || '';
 
@@ -82,10 +76,10 @@ const Map = () => {
   };
 
 
-  const handleImageClick = () => {
-    setIsModalOpen(true);
-    setIsImageLoading(true);
-  };
+  // const handleImageClick = () => {
+  //   setIsModalOpen(true);
+  //   setIsImageLoading(true);
+  // };
 
   const handleImageLoad = () => {
     // Add minimum 1 second delay before hiding the loading spinner
@@ -128,8 +122,6 @@ const Map = () => {
     const stallNum = parseInt(recommendedParking.stallNumber?.toString() || '132');
     return stallNum === 132 ?mapConfigs['general-blue-b132'] : mapConfigs['general-blue-b110'];
   };
-
-  const [selectedLevel, setSelectedLevel] = useState('P1');
 
   // Add this new function to handle level selection
   const handleLevelSelect = (level: string) => {
@@ -226,7 +218,6 @@ const Map = () => {
 
   return (
     <div className="flex flex-col h-[calc(100vh-5rem)] bg-white pt-10 pb-2">
-    <div className="flex flex-col h-[calc(100vh-5rem)] bg-white pt-10 pb-2">
       <span className="text-lg mb-4 font-bold px-8">Visitor Parking Spots Available </span>
       <span className="text-sm text-gray-500 mb-6 px-8">
         Last update: {getTimeSinceLastUpdate()} ago
@@ -258,15 +249,8 @@ const Map = () => {
               src={getMapImage()}
               alt="Parking Map" 
               className="max-w-[200%] h-auto pt-[100px] transition-opacity duration-300 ease-in-out"
-              className="max-w-[200%] h-auto pt-[100px] transition-opacity duration-300 ease-in-out"
               draggable={false}
-              style={{
-                opacity: isImageLoading ? 0 : 1
-              }}
-              onLoad={() => setIsImageLoading(false)}
-              style={{
-                opacity: isImageLoading ? 0 : 1
-              }}
+              style={{ opacity: isImageLoading ? 0 : 1 }}
               onLoad={() => setIsImageLoading(false)}
             />
             {getCurrentMapConfig().markers.map(marker => (
@@ -283,14 +267,8 @@ const Map = () => {
         {/* Add the vertical level selector */}
         <div className="absolute left-4 bottom-4 flex flex-col py-2 gap-1 bg-[#F7F7F7] rounded-xl overflow-hidden">
           {['P1', 'P2'].map((level) => (
-          {['P1', 'P2'].map((level) => (
             <button
               key={level}
-              onClick={() => {
-                setIsImageLoading(true);
-                handleLevelSelect(level);
-              }}
-              className={`px-4 py-2 text-sm transition-all duration-300 ${
               onClick={() => {
                 setIsImageLoading(true);
                 handleLevelSelect(level);
@@ -308,7 +286,6 @@ const Map = () => {
 
         {/* Add Voice Mode button */}
         <div className="absolute right-4 bottom-2 opacity-90">
-          <div className="flex items-center gap-2 bg-[#F7F7F7] rounded-xl px-4 py-3">
           <div className="flex items-center gap-2 bg-[#F7F7F7] rounded-xl px-4 py-3">
             <img src={voiceIcon} alt="Voice Mode" className="w-5 h-5" />
             <span className="text-sm text-gray-600">Voice Mode</span>
