@@ -5,7 +5,6 @@ import generalBlueB110 from '../assets/general-blue-b-110.png';
 import generalBlueB132 from '../assets/general-blue-b-132.png';
 import evOrangeB1 from '../assets/ev-orange-b-1.png';
 import floor2 from '../assets/floor-2.png';
-import floor2 from '../assets/floor-2.png';
 import { setParkingRecommendation } from '../store/parkingSlice';
 import { RootState } from '../store/store';
 import Draggable from 'react-draggable';
@@ -14,18 +13,15 @@ import MapMarker from '../components/MapMarker';
 import voiceIcon from '../assets/icon/Voice.png';
 import WebSocketService from '../services/websocketService';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3001';
-const GROQ_API_KEY = process.env.REACT_APP_API_KEY;
-
 const Map = () => {
   const dispatch = useDispatch();
+  const [parkingSpots, setParkingSpots] = useState({ p1: 20, p2: 20 });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isImageLoading, setIsImageLoading] = useState(true);
+  const [selectedLevel, setSelectedLevel] = useState('P1');
+  const [lastUpdateTime, setLastUpdateTime] = useState<Date>(new Date());
+  const [dragBounds, setDragBounds] = useState({ left: 0, top: 0, right: 0, bottom: 0 });
   
-  // Convert state to refs for values that don't need re-renders
-  // const lastUpdateTimeRef = useRef(0);
-  const [parkingSpots, setParkingSpots] = useState({ p1: 20, p2: 20 });
-
   // Update the selector to use typed state
   const userNeeds = useSelector((state: RootState) => 
     state.user?.user?.specialNeeds ?? {
@@ -45,16 +41,11 @@ const Map = () => {
       return floor2;
     }
 
-    if (selectedLevel === 'P2') {
-      return floor2;
-    }
-
     if (!recommendedParking) return mapDemo;
 
     const color = recommendedParking.color?.toLowerCase() || '';
     const zone = recommendedParking.zone?.toLowerCase() || '';
 
-    if (color === 'orange' && zone === 'b') {
     if (color === 'orange' && zone === 'b') {
       return evOrangeB1;
     }
@@ -69,7 +60,6 @@ const Map = () => {
     if (!recommendedParking) return mapDemo;
 
     // Parse the location string to get color and zone
-    const location = recommendedParking.location?.toLowerCase() || '';
     const color = recommendedParking.color?.toLowerCase() || '';
     const zone = recommendedParking.zone?.toLowerCase() || '';
 
@@ -81,22 +71,13 @@ const Map = () => {
     return generalBlueB110;
   };
 
-
-  const handleImageClick = () => {
-    setIsModalOpen(true);
-    setIsImageLoading(true);
-  };
-
   const handleImageLoad = () => {
     // Add minimum 1 second delay before hiding the loading spinner
     setTimeout(() => {
       setIsImageLoading(false);
     }, 1000);
-
   };
 
-  // Add state for tracking drag bounds
-  const [dragBounds, setDragBounds] = useState({ left: 0, top: 0, right: 0, bottom: 0 });
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
   // Add effect to calculate drag bounds
@@ -128,8 +109,6 @@ const Map = () => {
     const stallNum = parseInt(recommendedParking.stallNumber?.toString() || '132');
     return stallNum === 132 ?mapConfigs['general-blue-b132'] : mapConfigs['general-blue-b110'];
   };
-
-  const [selectedLevel, setSelectedLevel] = useState('P1');
 
   // Add this new function to handle level selection
   const handleLevelSelect = (level: string) => {
@@ -171,9 +150,6 @@ const Map = () => {
     return 5;
   };
 
-  // Add new state for last update time
-  const [lastUpdateTime, setLastUpdateTime] = useState<Date>(new Date());
-
   // Update the WebSocket effect to include timestamp updates
   useEffect(() => {
     const wsService = WebSocketService.getInstance();
@@ -198,16 +174,6 @@ const Map = () => {
     };
   }, []);
 
-  // Update the time display refresh interval to be more efficient
-  useEffect(() => {
-    const timer = setInterval(() => {
-      // Force re-render to update the time display
-      setLastUpdateTime(prev => new Date(prev.getTime()));
-    }, 10000); // Update every 10 seconds instead of every second
-
-    return () => clearInterval(timer);
-  }, []);
-
   // Update the time formatting function to be more precise
   const getTimeSinceLastUpdate = () => {
     const now = new Date();
@@ -225,7 +191,6 @@ const Map = () => {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-5rem)] bg-white pt-10 pb-2">
     <div className="flex flex-col h-[calc(100vh-5rem)] bg-white pt-10 pb-2">
       <span className="text-lg mb-4 font-bold px-8">Visitor Parking Spots Available </span>
       <span className="text-sm text-gray-500 mb-6 px-8">
@@ -258,15 +223,8 @@ const Map = () => {
               src={getMapImage()}
               alt="Parking Map" 
               className="max-w-[200%] h-auto pt-[100px] transition-opacity duration-300 ease-in-out"
-              className="max-w-[200%] h-auto pt-[100px] transition-opacity duration-300 ease-in-out"
               draggable={false}
-              style={{
-                opacity: isImageLoading ? 0 : 1
-              }}
-              onLoad={() => setIsImageLoading(false)}
-              style={{
-                opacity: isImageLoading ? 0 : 1
-              }}
+              style={{ opacity: isImageLoading ? 0 : 1 }}
               onLoad={() => setIsImageLoading(false)}
             />
             {getCurrentMapConfig().markers.map(marker => (
@@ -283,14 +241,8 @@ const Map = () => {
         {/* Add the vertical level selector */}
         <div className="absolute left-4 bottom-4 flex flex-col py-2 gap-1 bg-[#F7F7F7] rounded-xl overflow-hidden">
           {['P1', 'P2'].map((level) => (
-          {['P1', 'P2'].map((level) => (
             <button
               key={level}
-              onClick={() => {
-                setIsImageLoading(true);
-                handleLevelSelect(level);
-              }}
-              className={`px-4 py-2 text-sm transition-all duration-300 ${
               onClick={() => {
                 setIsImageLoading(true);
                 handleLevelSelect(level);
@@ -308,7 +260,6 @@ const Map = () => {
 
         {/* Add Voice Mode button */}
         <div className="absolute right-4 bottom-2 opacity-90">
-          <div className="flex items-center gap-2 bg-[#F7F7F7] rounded-xl px-4 py-3">
           <div className="flex items-center gap-2 bg-[#F7F7F7] rounded-xl px-4 py-3">
             <img src={voiceIcon} alt="Voice Mode" className="w-5 h-5" />
             <span className="text-sm text-gray-600">Voice Mode</span>

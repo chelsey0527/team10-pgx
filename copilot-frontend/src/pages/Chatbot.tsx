@@ -17,7 +17,6 @@ interface SpecialNeeds {
   needsAccessible: boolean;
   needsCloserToElevator: boolean;
 }
-import { setParkingRecommendation } from '../store/parkingSlice';
 
 interface SpecialNeeds {
   needsEV: boolean;
