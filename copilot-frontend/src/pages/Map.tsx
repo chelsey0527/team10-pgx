@@ -15,13 +15,13 @@ import WebSocketService from '../services/websocketService';
 
 const Map = () => {
   const dispatch = useDispatch();
+  const [parkingSpots, setParkingSpots] = useState({ p1: 20, p2: 20 });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isImageLoading, setIsImageLoading] = useState(true);
+  const [selectedLevel, setSelectedLevel] = useState('P1');
+  const [lastUpdateTime, setLastUpdateTime] = useState<Date>(new Date());
+  const [dragBounds, setDragBounds] = useState({ left: 0, top: 0, right: 0, bottom: 0 });
   
-  // Convert state to refs for values that don't need re-renders
-  // const lastUpdateTimeRef = useRef(0);
-  const [parkingSpots, setParkingSpots] = useState({ p1: 20, p2: 20 });
-
   // Update the selector to use typed state
   const userNeeds = useSelector((state: RootState) => 
     state.user?.user?.specialNeeds ?? {
@@ -34,9 +34,6 @@ const Map = () => {
   
   console.log('userNeeds:', userNeeds);
   console.log('Recommended parking from Redux:', recommendedParking);
-
-  // Move this declaration to the top, before it's used
-  const [selectedLevel, setSelectedLevel] = useState('P1');
 
   // Function to determine which map to show
   const getMapImage = () => {
@@ -63,7 +60,6 @@ const Map = () => {
     if (!recommendedParking) return mapDemo;
 
     // Parse the location string to get color and zone
-    // const location = recommendedParking.location?.toLowerCase() || '';
     const color = recommendedParking.color?.toLowerCase() || '';
     const zone = recommendedParking.zone?.toLowerCase() || '';
 
@@ -75,22 +71,13 @@ const Map = () => {
     return generalBlueB110;
   };
 
-
-  // const handleImageClick = () => {
-  //   setIsModalOpen(true);
-  //   setIsImageLoading(true);
-  // };
-
   const handleImageLoad = () => {
     // Add minimum 1 second delay before hiding the loading spinner
     setTimeout(() => {
       setIsImageLoading(false);
     }, 1000);
-
   };
 
-  // Add state for tracking drag bounds
-  const [dragBounds, setDragBounds] = useState({ left: 0, top: 0, right: 0, bottom: 0 });
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
   // Add effect to calculate drag bounds
@@ -163,9 +150,6 @@ const Map = () => {
     return 5;
   };
 
-  // Add new state for last update time
-  const [lastUpdateTime, setLastUpdateTime] = useState<Date>(new Date());
-
   // Update the WebSocket effect to include timestamp updates
   useEffect(() => {
     const wsService = WebSocketService.getInstance();
@@ -188,16 +172,6 @@ const Map = () => {
       unsubscribe();
       clearInterval(pollInterval);
     };
-  }, []);
-
-  // Update the time display refresh interval to be more efficient
-  useEffect(() => {
-    const timer = setInterval(() => {
-      // Force re-render to update the time display
-      setLastUpdateTime(prev => new Date(prev.getTime()));
-    }, 10000); // Update every 10 seconds instead of every second
-
-    return () => clearInterval(timer);
   }, []);
 
   // Update the time formatting function to be more precise
