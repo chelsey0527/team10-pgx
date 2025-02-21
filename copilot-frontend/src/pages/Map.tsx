@@ -12,6 +12,7 @@ import { mapConfigs } from '../config/mapConfigs';
 import MapMarker from '../components/MapMarker';
 import voiceIcon from '../assets/icon/Voice.png';
 import WebSocketService from '../services/websocketService';
+import BackButton from 'components/BackButton';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3001';
 const GROQ_API_KEY = process.env.REACT_APP_API_KEY;
@@ -220,6 +221,7 @@ const Map = () => {
 
   return (
     <div className="flex flex-col h-[calc(100vh-5rem)] bg-white pt-10 pb-2">
+      <BackButton />
       <span className="text-lg mb-4 font-bold px-8">Visitor Parking Spots Available </span>
       <span className="text-sm text-gray-500 mb-6 px-8">
         Last update: {getTimeSinceLastUpdate()} ago

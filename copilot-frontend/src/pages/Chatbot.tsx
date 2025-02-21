@@ -11,7 +11,10 @@ import { Message } from '../types/message';
 import { parseMessage } from '../utils/messageParser';
 import { ActionButtons } from '../components/ActionButtons';
 import { setParkingRecommendation } from '../store/parkingSlice';
-
+import MapButton from '../components/MapButton';
+import BackButton from '../components/BackButton';
+import { useNavigate } from 'react-router-dom';
+import MenuIcon from '../assets/icon/Menu.png';
 interface SpecialNeeds {
   needsEV: boolean;
   needsAccessible: boolean;
@@ -26,6 +29,7 @@ const formatMessage = (msg: any): Message => ({
 
 export const Chatbot = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
   // const { user } = useSelector((state: RootState) => state.user);
   const { activationCode, eventUser } = useSelector((state: RootState) => state.activation);
   
@@ -251,96 +255,112 @@ export const Chatbot = () => {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-5rem)] bg-gradient-to-b from-[#FCF9F6] to-[#f3e6d8]">
-      {/* Chat messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 mt-5">
-        {messages.map((message, index) => (
-          <div
-            key={index}
-            className={`flex ${
-              message.sender === 'user' ? 'justify-end' : 'justify-start'
-            }`}
-          >
-            <div
-              className={`max-w-[85%] rounded-[10px] px-3 py-2 text-sm ${
-                message.sender === 'user'
-                  ? 'bg-[#FDE5CD] text-black'
-                  : ' text-black'
-              }`}
-            >
-              {message.sender === 'bot' ? (
-                <div className="space-y-2">
-                  {parseMessage(message.text, dispatch)}
-                </div>
-              ) : (
-                <span className="whitespace-pre-line">
-                  {formatBoldText(message.text)}
-                </span>
-              )}
-            </div>
-          </div>
-        ))}
+    <div className="h-screen flex flex-col">
+      <div className="fixed top-0 left-0 right-0 h-16 flex items-center px-4 py-3 bg-white z-10">
+        <button 
+          className="p-2 hover:bg-gray-100 rounded-full"
+          onClick={() => navigate('/menu')}
+        >
+          <img src={MenuIcon} alt="Menu" className="w-6 h-6" />
+        </button>
         
-        {/* Loading indicator styled like a message */}
-        {isLoading && (
-          <div className="flex justify-start">
-            <div className="max-w-[80%] rounded-lg p-3">
-              <div className="flex items-center justify-center">
-                <img 
-                  src="/copilot-logo-colored.png" 
-                  alt="Loading..." 
-                  className="w-8 h-8 animate-pulse"
-                />
-                <span className=" ml-2 text-sm animate-pulse">Generating response...</span>
-              </div>
-            </div>
-          </div>
-        )}
-        <div ref={messagesEndRef} />
+        <h1 className="absolute left-1/2 transform -translate-x-1/2 text-md">
+          Copilot for Parking
+        </h1>
+        
+        <div className="ml-auto">
+          <MapButton />
+        </div>
       </div>
 
-      {/* Message input */}
-      <div className=" p-4">
-        <ActionButtons onActionClick={handleActionClick} agentMessage={messages[messages.length - 1]?.text} />
-        <form
-          onSubmit={handleSendMessage}
-          className="flex items-center gap-2 px-4 py-2 bg-[#F5EFE9] rounded-[24px] border border-white shadow-lg"
-        >
-          <img 
-            src="/copilot-logo-colored.png" 
-            alt="Copilot Logo" 
-            className="w-8 h-8 object-contain"
-          />
-          <input
-            ref={inputRef}
-            type="text"
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            placeholder="Message Copilot"
-            className="flex-1 p-2 px-4 rounded-[18px] focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-inner"
-            onKeyDown={handleKeyDown}
-          />
-          <button
-            type="submit"
-            className="p-2 rounded-full"
-            onClick={handleSend}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
-              className="w-6 h-6"
+      <div className="flex-1 flex flex-col bg-gradient-to-b from-[#FCF9F6] to-[#f3e6d8] pt-16">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {messages.map((message, index) => (
+            <div
+              key={index}
+              className={`flex ${
+                message.sender === 'user' ? 'justify-end' : 'justify-start'
+              }`}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"
-              />
-            </svg>
-          </button>
-        </form>
+              <div
+                className={`max-w-[85%] rounded-[10px] px-3 py-2 text-sm ${
+                  message.sender === 'user'
+                    ? 'bg-[#FDE5CD] text-black'
+                    : ' text-black'
+                }`}
+              >
+                {message.sender === 'bot' ? (
+                  <div className="space-y-2">
+                    {parseMessage(message.text, dispatch)}
+                  </div>
+                ) : (
+                  <span className="whitespace-pre-line">
+                    {formatBoldText(message.text)}
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+          
+          {isLoading && (
+            <div className="flex justify-start">
+              <div className="max-w-[80%] rounded-lg p-3">
+                <div className="flex items-center justify-center">
+                  <img 
+                    src="/copilot-logo-colored.png" 
+                    alt="Loading..." 
+                    className="w-8 h-8 animate-pulse"
+                  />
+                  <span className=" ml-2 text-sm animate-pulse">Generating response...</span>
+                </div>
+              </div>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+
+        <div className="p-4">
+          <ActionButtons onActionClick={handleActionClick} agentMessage={messages[messages.length - 1]?.text} />
+          <form
+            onSubmit={handleSendMessage}
+            className="flex items-center gap-2 px-4 py-2 bg-[#F5EFE9] rounded-[24px] border border-white shadow-lg"
+          >
+            <img 
+              src="/copilot-logo-colored.png" 
+              alt="Copilot Logo" 
+              className="w-8 h-8 object-contain"
+            />
+            <input
+              ref={inputRef}
+              type="text"
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
+              placeholder="Message Copilot"
+              className="flex-1 p-2 px-4 rounded-[18px] focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-inner"
+              onKeyDown={handleKeyDown}
+            />
+            <button
+              type="submit"
+              className="p-2 rounded-full"
+              onClick={handleSend}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+                className="w-6 h-6"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"
+                />
+              </svg>
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );
