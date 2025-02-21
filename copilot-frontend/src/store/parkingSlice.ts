@@ -12,6 +12,7 @@ interface ParkingRecommendation {
 
 interface ParkingState {
   recommendation: ParkingRecommendation | null;
+  lastUpdated: Date | null;
 }
 
 const initialState: ParkingState = {
@@ -31,5 +32,6 @@ const parkingSlice = createSlice({
   }
 });
 
+export const { setParkingRecommendation, clearParkingRecommendation } = parkingSlice.actions;
 export const { setParkingRecommendation, clearParkingRecommendation } = parkingSlice.actions;
 export default parkingSlice.reducer; 

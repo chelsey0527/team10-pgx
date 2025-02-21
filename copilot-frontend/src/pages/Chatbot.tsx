@@ -21,6 +21,12 @@ interface SpecialNeeds {
   needsCloserToElevator: boolean;
 }
 
+interface SpecialNeeds {
+  needsEV: boolean;
+  needsAccessible: boolean;
+  needsCloserToElevator: boolean;
+}
+
 const formatMessage = (msg: any): Message => ({
   text: msg.message,
   sender: msg.sender,

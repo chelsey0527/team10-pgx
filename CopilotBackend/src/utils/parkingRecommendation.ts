@@ -6,6 +6,14 @@
 // And it is closet to North elevator which leads to building	3-7(stored as string) and the weight is rank is 1. i want you to calcuate the score  of each area with special needs, availability, closet to their eveny building that directs the most efficient parking area for them
 // - show the recommended result 
 
+//for this system i want to write a unit test to :
+
+// - show the current user attribute being extracted (including their meeting venue, special needs)
+// - showcase the recommendation calculation is precisely based on the following flow:
+// each special area has elevator1, evevator_building1 and weight1. Which for example accessible spot at blue	A zeon has 5 spots.
+// And it is closet to North elevator which leads to building	3-7(stored as string) and the weight is rank is 1. i want you to calcuate the score  of each area with special needs, availability, closet to their eveny building that directs the most efficient parking area for them
+// - show the recommended result 
+
 import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
@@ -38,6 +46,15 @@ export async function getParkingRecommendation(
 
 //   console.log('-----------------', sanitizedNeeds.needsEV, sanitizedNeeds.needsAccessible);
 
+  // Ensure boolean values
+  const sanitizedNeeds = {
+    needsEV: Boolean(specialNeeds.needsEV),
+    needsAccessible: Boolean(specialNeeds.needsAccessible),
+    needsCloserToElevator: Boolean(specialNeeds.needsCloserToElevator)
+  };
+
+//   console.log('-----------------', sanitizedNeeds.needsEV, sanitizedNeeds.needsAccessible);
+
   const garages = await prisma.garage.findMany({
     where: {
       OR: [
@@ -52,6 +69,8 @@ export async function getParkingRecommendation(
       }
     }
   });
+
+//   console.log('Garages found:', garages);
 
 //   console.log('Garages found:', garages);
 
@@ -78,6 +97,7 @@ export async function getParkingRecommendation(
     
     // Score based on spots (normalize to 0-100)
     score += ((garage.spots ?? 0) / Math.max(...garages.map(g => g.spots ?? 0))) * 100;
+    score += ((garage.spots ?? 0) / Math.max(...garages.map(g => g.spots ?? 0))) * 100;
     
     // Score based on best weight to the building
     const bestWeight = Math.max(
@@ -87,6 +107,7 @@ export async function getParkingRecommendation(
     score += bestWeight * 50; // Weight proximity heavily
 
     // If user needs closer elevator access, prioritize weight even more
+    if (sanitizedNeeds.needsCloserToElevator) {
     if (sanitizedNeeds.needsCloserToElevator) {
       score += bestWeight * 25;
     }
@@ -113,6 +134,7 @@ export async function getParkingRecommendation(
     bestGarage.weight1 >= (bestGarage.weight2 || 0);
 
   const recommendation = {
+    location: `${bestGarage.color!} Zone ${bestGarage.zone!}`,
     location: `${bestGarage.color!} Zone ${bestGarage.zone!}`,
     elevator: useElevator1 ? bestGarage.elevator1 : bestGarage.elevator2,
     spots: bestGarage.spots!,

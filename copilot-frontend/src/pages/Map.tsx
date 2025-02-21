@@ -14,18 +14,15 @@ import voiceIcon from '../assets/icon/Voice.png';
 import WebSocketService from '../services/websocketService';
 import BackButton from 'components/BackButton';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3001';
-const GROQ_API_KEY = process.env.REACT_APP_API_KEY;
-
 const Map = () => {
   const dispatch = useDispatch();
+  const [parkingSpots, setParkingSpots] = useState({ p1: 20, p2: 20 });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isImageLoading, setIsImageLoading] = useState(true);
+  const [selectedLevel, setSelectedLevel] = useState('P1');
+  const [lastUpdateTime, setLastUpdateTime] = useState<Date>(new Date());
+  const [dragBounds, setDragBounds] = useState({ left: 0, top: 0, right: 0, bottom: 0 });
   
-  // Convert state to refs for values that don't need re-renders
-  // const lastUpdateTimeRef = useRef(0);
-  const [parkingSpots, setParkingSpots] = useState({ p1: 20, p2: 20 });
-
   // Update the selector to use typed state
   const userNeeds = useSelector((state: RootState) => 
     state.user?.user?.specialNeeds ?? {
@@ -64,7 +61,6 @@ const Map = () => {
     if (!recommendedParking) return mapDemo;
 
     // Parse the location string to get color and zone
-    const location = recommendedParking.location?.toLowerCase() || '';
     const color = recommendedParking.color?.toLowerCase() || '';
     const zone = recommendedParking.zone?.toLowerCase() || '';
 
@@ -76,22 +72,13 @@ const Map = () => {
     return generalBlueB110;
   };
 
-
-  const handleImageClick = () => {
-    setIsModalOpen(true);
-    setIsImageLoading(true);
-  };
-
   const handleImageLoad = () => {
     // Add minimum 1 second delay before hiding the loading spinner
     setTimeout(() => {
       setIsImageLoading(false);
     }, 1000);
-
   };
 
-  // Add state for tracking drag bounds
-  const [dragBounds, setDragBounds] = useState({ left: 0, top: 0, right: 0, bottom: 0 });
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
   // Add effect to calculate drag bounds
@@ -123,8 +110,6 @@ const Map = () => {
     const stallNum = parseInt(recommendedParking.stallNumber?.toString() || '132');
     return stallNum === 132 ?mapConfigs['general-blue-b132'] : mapConfigs['general-blue-b110'];
   };
-
-  const [selectedLevel, setSelectedLevel] = useState('P1');
 
   // Add this new function to handle level selection
   const handleLevelSelect = (level: string) => {
@@ -166,9 +151,6 @@ const Map = () => {
     return 5;
   };
 
-  // Add new state for last update time
-  const [lastUpdateTime, setLastUpdateTime] = useState<Date>(new Date());
-
   // Update the WebSocket effect to include timestamp updates
   useEffect(() => {
     const wsService = WebSocketService.getInstance();
@@ -191,16 +173,6 @@ const Map = () => {
       unsubscribe();
       clearInterval(pollInterval);
     };
-  }, []);
-
-  // Update the time display refresh interval to be more efficient
-  useEffect(() => {
-    const timer = setInterval(() => {
-      // Force re-render to update the time display
-      setLastUpdateTime(prev => new Date(prev.getTime()));
-    }, 10000); // Update every 10 seconds instead of every second
-
-    return () => clearInterval(timer);
   }, []);
 
   // Update the time formatting function to be more precise
@@ -254,9 +226,7 @@ const Map = () => {
               alt="Parking Map" 
               className="max-w-[200%] h-auto pt-[100px] transition-opacity duration-300 ease-in-out"
               draggable={false}
-              style={{
-                opacity: isImageLoading ? 0 : 1
-              }}
+              style={{ opacity: isImageLoading ? 0 : 1 }}
               onLoad={() => setIsImageLoading(false)}
             />
             {getCurrentMapConfig().markers.map(marker => (

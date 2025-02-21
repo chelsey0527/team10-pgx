@@ -11,7 +11,10 @@ export const mapConfigs: Record<string, MapConfig> = {
         id: 'entrance-1',
         x: 58,
         y: 28,
+        x: 58,
+        y: 28,
         type: 'entrance',
+        tooltip: '156th Entrance'
         tooltip: '156th Entrance'
       },
       {
@@ -51,11 +54,16 @@ export const mapConfigs: Record<string, MapConfig> = {
         id: 'entrance-1',
         x: 58,
         y: 26,
+        x: 58,
+        y: 26,
         type: 'entrance',
+        tooltip: '159th Entrance'
         tooltip: '159th Entrance'
       },
       {
         id: 'parking-1',
+        x: 140,
+        y: 52,
         x: 140,
         y: 52,
         type: 'parking',
