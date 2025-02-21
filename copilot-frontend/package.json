@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@headlessui/react": "^2.2.0",
     "@reduxjs/toolkit": "^2.5.1",
     "@types/priorityqueuejs": "^1.0.4",
     "@types/redux-persist-transform-encrypt": "^2.0.4",

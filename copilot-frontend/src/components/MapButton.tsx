@@ -7,7 +7,7 @@ const MapButton = () => {
   return (
     <button
       onClick={() => navigate('/map')}
-      className="absolute top-4 right-4 p-2 rounded-full bg-white hover:bg-gray-100"
+      className="absolute top-4 right-4 p-2 rounded-full"
       aria-label="Open Map"
     >
       <svg 
