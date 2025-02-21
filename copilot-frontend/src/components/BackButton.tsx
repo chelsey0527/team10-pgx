@@ -7,7 +7,7 @@ const BackButton = () => {
   return (
     <button
       onClick={() => navigate(-1)}
-      className="absolute top-4 left-4 p-2 rounded-full bg-white shadow-md hover:bg-gray-100"
+      className="absolute top-4 left-4 p-2 rounded-full bg-white hover:bg-gray-100"
       aria-label="Go Back"
     >
       <svg 

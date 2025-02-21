@@ -192,84 +192,82 @@ const Map = () => {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-5rem)] bg-white pt-10 pb-2">
-      <BackButton />
-      <span className="text-lg mb-4 font-bold px-8">Visitor Parking Spots Available </span>
-      <span className="text-sm text-gray-500 mb-6 px-8">
-        Last update: {getTimeSinceLastUpdate()} ago
-      </span>
-      
-      {/* Parking spot counters */}
-      <div className="flex gap-4 mb-2 px-8">
-        <div className="flex-1 max-w-[200px] bg-white rounded-xl shadow-md flex items-center h-12">
-          <div className="flex items-center justify-center text-[#BE8544] text-lg bg-[#fbe7d7] rounded-xl h-full w-10">P1</div>
-          <div className="text-xl font-medium flex-1 text-center">{parkingSpots.p1}</div>
+    <div className="flex flex-col h-[calc(100vh-5rem)] bg-white">
+      <div className="flex items-center px-8 py-6 border-gray-200">
+        <BackButton />
+        <h1 className="flex-1 text-md text-center mr-8">Map</h1>
+      </div>
+
+      <div className="flex flex-col flex-1">
+        <span className="text-lg mb-4 font-bold px-8">East campus garage</span>
+        
+        <div className="flex gap-4 mb-2 px-8">
+          <div className="flex-1 max-w-[200px] bg-white rounded-xl shadow-md flex items-center h-12">
+            <div className="flex items-center justify-center text-[#BE8544] text-lg bg-[#fbe7d7] rounded-xl h-full w-10">P1</div>
+            <div className="text-xl font-medium flex-1 text-center">{parkingSpots.p1}</div>
+          </div>
+          
+          <div className="flex-1 max-w-[200px] bg-white rounded-xl shadow-md flex items-center h-12">
+            <div className="flex items-center justify-center text-[#BE8544] text-lg bg-[#fbe7d7] rounded-xl h-full w-10">P2</div>
+            <div className="text-xl font-medium flex-1 text-center">{parkingSpots.p2}</div>
+          </div>
         </div>
         
-        <div className="flex-1 max-w-[200px] bg-white rounded-xl shadow-md flex items-center h-12">
-          <div className="flex items-center justify-center text-[#BE8544] text-lg bg-[#fbe7d7] rounded-xl h-full w-10">P2</div>
-          <div className="text-xl font-medium flex-1 text-center">{parkingSpots.p2}</div>
-        </div>
-      </div>
-      
-      {/* Main map container - add relative positioning */}
-      <div className="flex-1 flex items-start justify-center overflow-hidden relative" ref={mapContainerRef}>
-        <Draggable
-          bounds={dragBounds}
-          defaultPosition={{x: 0, y: 0}}
-          cancel=".clickable"
-          axis="x"
-        >
-          <div className="cursor-move relative">
-            <img 
-              src={getMapImage()}
-              alt="Parking Map" 
-              className="max-w-[200%] h-auto pt-[100px] transition-opacity duration-300 ease-in-out"
-              draggable={false}
-              style={{ opacity: isImageLoading ? 0 : 1 }}
-              onLoad={() => setIsImageLoading(false)}
-            />
-            {getCurrentMapConfig().markers.map(marker => (
-              <MapMarker 
-                key={marker.id} 
-                marker={marker} 
-                selectedLevel={selectedLevel}
-                availableSpots={getAvailableSpots(marker.tooltip)}
+        <div className="flex-1 flex items-start justify-center overflow-hidden relative" ref={mapContainerRef}>
+          <Draggable
+            bounds={dragBounds}
+            defaultPosition={{x: 0, y: 0}}
+            cancel=".clickable"
+            axis="x"
+          >
+            <div className="cursor-move relative">
+              <img 
+                src={getMapImage()}
+                alt="Parking Map" 
+                className="max-w-[200%] h-auto pt-[100px] transition-opacity duration-300 ease-in-out"
+                draggable={false}
+                style={{ opacity: isImageLoading ? 0 : 1 }}
+                onLoad={() => setIsImageLoading(false)}
               />
+              {getCurrentMapConfig().markers.map(marker => (
+                <MapMarker 
+                  key={marker.id} 
+                  marker={marker} 
+                  selectedLevel={selectedLevel}
+                  availableSpots={getAvailableSpots(marker.tooltip)}
+                />
+              ))}
+            </div>
+          </Draggable>
+
+          <div className="absolute left-4 bottom-4 flex flex-col py-2 gap-1 bg-[#F7F7F7] rounded-xl overflow-hidden">
+            {['P1', 'P2'].map((level) => (
+              <button
+                key={level}
+                onClick={() => {
+                  setIsImageLoading(true);
+                  handleLevelSelect(level);
+                }}
+                className={`px-4 py-2 text-sm transition-all duration-300 ${
+                  selectedLevel === level
+                    ? 'text-black font-bold'
+                    : 'text-gray-400 hover:bg-gray-100'
+                }`}
+              >
+                {level}
+              </button>
             ))}
           </div>
-        </Draggable>
 
-        {/* Add the vertical level selector */}
-        <div className="absolute left-4 bottom-4 flex flex-col py-2 gap-1 bg-[#F7F7F7] rounded-xl overflow-hidden">
-          {['P1', 'P2'].map((level) => (
-            <button
-              key={level}
-              onClick={() => {
-                setIsImageLoading(true);
-                handleLevelSelect(level);
-              }}
-              className={`px-4 py-2 text-sm transition-all duration-300 ${
-                selectedLevel === level
-                  ? 'text-black font-bold'
-                  : 'text-gray-400 hover:bg-gray-100'
-              }`}
-            >
-              {level}
-            </button>
-          ))}
-        </div>
-
-        {/* Add Voice Mode button */}
-        <div className="absolute right-4 bottom-2 opacity-90">
-          <div className="flex items-center gap-2 bg-[#F7F7F7] rounded-xl px-4 py-3">
-            <img src={voiceIcon} alt="Voice Mode" className="w-5 h-5" />
-            <span className="text-sm text-gray-600">Voice Mode</span>
+          <div className="absolute right-4 bottom-2 opacity-90">
+            <div className="flex items-center gap-2 bg-[#F7F7F7] rounded-xl px-4 py-3">
+              <img src={voiceIcon} alt="Voice Mode" className="w-5 h-5" />
+              <span className="text-sm text-gray-600">Voice Mode</span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Modal popup */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="relative">
